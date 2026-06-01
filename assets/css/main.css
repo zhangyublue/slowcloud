@@ -604,7 +604,6 @@ img {
     background: var(--slowcloud-home-right-bg, rgba(255, 255, 255, 0.74));
     display: flex;
     flex-direction: column;
-    gap: 20px;
     min-width: 0;
     padding: 14px 14px 20px;
 }
@@ -624,13 +623,26 @@ img {
 }
 
 .slowcloud-sidebar-card ul {
+    list-style: none;
     margin: 0;
-    padding-left: 18px;
+    padding-left: 0;
     color: var(--slowcloud-muted);
+    font-size: 0.86rem;
 }
 
 .slowcloud-sidebar-card li + li {
-    margin-top: 10px;
+    margin-top: 0;
+}
+
+.slowcloud-sidebar-card a {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.slowcloud-sidebar-card:first-child a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .category-list li:not(.slowcloud-category-list-parent) {
@@ -651,11 +663,17 @@ img {
     padding-right: 24px;
 }
 
+.slowcloud-category-list-parent > ul {
+    margin-top: 0;
+    padding-left: 12px;
+}
+
 .slowcloud-category-count {
     margin-left: auto;
     color: var(--slowcloud-muted);
     font-size: 0.86em;
     opacity: 0.72;
+    padding-right: 6px;
 }
 
 .slowcloud-category-toggle {
@@ -669,8 +687,11 @@ img {
     background: transparent;
     color: var(--slowcloud-muted);
     cursor: pointer;
-    font-size: 0.88rem;
     line-height: 20px;
+}
+
+.slowcloud-category-toggle.iconfont {
+    font-size: 14px;
 }
 
 .slowcloud-category-list-parent:not(.slowcloud-is-open) > ul {

@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "1194333",
+      "name": "arrow-down",
+      "font_class": "arrow-down",
+      "unicode": "e60a",
+      "unicode_decimal": 58890
+    },
+    {
       "icon_id": "1194269",
       "name": "arrow-right",
       "font_class": "arrow-right",
@@ -18,20 +25,6 @@
       "font_class": "arrow-left",
       "unicode": "e608",
       "unicode_decimal": 58888
-    },
-    {
-      "icon_id": "1470543",
-      "name": "arrow_up",
-      "font_class": "arrow_up",
-      "unicode": "e636",
-      "unicode_decimal": 58934
-    },
-    {
-      "icon_id": "1470545",
-      "name": "arrow_down",
-      "font_class": "arrow_down",
-      "unicode": "e635",
-      "unicode_decimal": 58933
     },
     {
       "icon_id": "766689",

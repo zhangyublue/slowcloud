@@ -161,7 +161,7 @@
 
             button.addEventListener('click', () => {
                 const isOpen = item.classList.toggle('slowcloud-is-open');
-                button.classList.toggle('icon-slowcloudarrow-left', isOpen);
+                button.classList.toggle('icon-slowcloudarrow-down', isOpen);
                 button.classList.toggle('icon-slowcloudarrow-right', !isOpen);
                 button.setAttribute('aria-expanded', String(isOpen));
                 button.setAttribute('aria-label', `${isOpen ? '收起' : '展开'} ${link.textContent.trim()}`);
