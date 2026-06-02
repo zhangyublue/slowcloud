@@ -244,6 +244,35 @@ function themeConfig($form)
     );
     $form->addInput(slowcloud_assign_settings_group($authorBio, 'author-card', '博主信息栏'));
 
+    $githubUrl = new \Typecho\Widget\Helper\Form\Element\Text(
+        'githubUrl',
+        null,
+        null,
+        _t('GitHub 地址'),
+        _t('填写后会显示在左侧作者区域，例如 https://github.com/your-name')
+    );
+    $githubUrl->addRule('url', _t('请填写正确的 URL 地址'));
+    $form->addInput(slowcloud_assign_settings_group($githubUrl, 'author-card', '博主信息栏'));
+
+    $bilibiliUrl = new \Typecho\Widget\Helper\Form\Element\Text(
+        'bilibiliUrl',
+        null,
+        null,
+        _t('Bilibili 地址'),
+        _t('填写后会显示在左侧作者区域，例如 https://space.bilibili.com/123456')
+    );
+    $bilibiliUrl->addRule('url', _t('请填写正确的 URL 地址'));
+    $form->addInput(slowcloud_assign_settings_group($bilibiliUrl, 'author-card', '博主信息栏'));
+
+    $friendLinks = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'friendLinks',
+        null,
+        null,
+        _t('友链列表'),
+        _t('每行一条，格式为 名称|https://example.com ，例如 OpenAI|https://openai.com')
+    );
+    $form->addInput(slowcloud_assign_settings_group($friendLinks, 'author-card', '博主信息栏'));
+
     $showSidebar = new \Typecho\Widget\Helper\Form\Element\Radio(
         'showSidebar',
         [
@@ -268,6 +297,16 @@ function themeConfig($form)
         _t('用户未手动切换主题时，站点默认使用的主题模式')
     );
     $form->addInput(slowcloud_assign_settings_group($themeMode, 'layout-options', '布局设置'));
+
+    $uploadCdnUrl = new \Typecho\Widget\Helper\Form\Element\Text(
+        'uploadCdnUrl',
+        null,
+        null,
+        _t('上传图片 CDN 地址'),
+        _t('仅用于改写站内上传目录 usr/uploads 下的图片地址。填写 CDN 域名根地址，例如 https://cdn.example.com；保存后会作用于文章正文、摘要和海报图中的本地上传图片，请确保 CDN 已正确回源到站点上传目录。')
+    );
+    $uploadCdnUrl->addRule('url', _t('请填写正确的 URL 地址'));
+    $form->addInput(slowcloud_assign_settings_group($uploadCdnUrl, 'content-delivery', '内容分发设置'));
 
     $form->addInput(slowcloud_theme_settings_enhancer());
 }
@@ -338,15 +377,124 @@ function slowcloud_poster($archive): string
 {
     $poster = trim((string) ($archive->fields->poster ?? ''));
     if ($poster !== '') {
-        return $poster;
+        return slowcloud_rewrite_upload_url($archive, $poster);
     }
 
     $requestFields = \Typecho\Request::getInstance()->getArray('fields');
     if (is_array($requestFields) && isset($requestFields['poster'])) {
-        return trim((string) $requestFields['poster']);
+        return slowcloud_rewrite_upload_url($archive, trim((string) $requestFields['poster']));
     }
 
     return '';
+}
+
+function slowcloud_upload_cdn_url($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $cdnUrl = trim((string) ($options->uploadCdnUrl ?? ''));
+
+    if ($cdnUrl === '' || !preg_match('#^https?://#i', $cdnUrl)) {
+        return '';
+    }
+
+    return rtrim($cdnUrl, '/');
+}
+
+function slowcloud_join_url(string $base, string $path): string
+{
+    return rtrim($base, '/') . '/' . ltrim($path, '/');
+}
+
+function slowcloud_rewrite_upload_url($archive, string $url): string
+{
+    $url = trim($url);
+    if ($url === '') {
+        return '';
+    }
+
+    $cdnUrl = slowcloud_upload_cdn_url($archive);
+    if ($cdnUrl === '') {
+        return $url;
+    }
+
+    $siteUrl = rtrim((string) (($archive->options ?? \Widget\Options::alloc())->siteUrl ?? ''), '/');
+    $siteParts = $siteUrl !== '' ? parse_url($siteUrl) : false;
+    $urlParts = parse_url($url);
+
+    if ($urlParts === false) {
+        return $url;
+    }
+
+    if (!isset($urlParts['scheme'], $urlParts['host'])) {
+        $path = $urlParts['path'] ?? '';
+        if (strpos($path, '/usr/uploads/') === 0 || strpos($path, 'usr/uploads/') === 0) {
+            return slowcloud_join_url($cdnUrl, ltrim($path, '/'))
+                . (isset($urlParts['query']) ? '?' . $urlParts['query'] : '')
+                . (isset($urlParts['fragment']) ? '#' . $urlParts['fragment'] : '');
+        }
+
+        return $url;
+    }
+
+    if ($siteParts === false || !isset($siteParts['host'])) {
+        return $url;
+    }
+
+    $sameHost = strcasecmp($urlParts['host'], $siteParts['host']) === 0;
+    $samePort = ($urlParts['port'] ?? null) === ($siteParts['port'] ?? null);
+    if (!$sameHost || !$samePort) {
+        return $url;
+    }
+
+    $sitePath = isset($siteParts['path']) ? rtrim($siteParts['path'], '/') : '';
+    $urlPath = $urlParts['path'] ?? '';
+    $relativePath = $urlPath;
+
+    if ($sitePath !== '' && strpos($urlPath, $sitePath . '/') === 0) {
+        $relativePath = substr($urlPath, strlen($sitePath) + 1);
+    } elseif (strpos($urlPath, '/usr/uploads/') === 0) {
+        $relativePath = ltrim($urlPath, '/');
+    }
+
+    if (strpos($relativePath, 'usr/uploads/') !== 0) {
+        return $url;
+    }
+
+    return slowcloud_join_url($cdnUrl, $relativePath)
+        . (isset($urlParts['query']) ? '?' . $urlParts['query'] : '')
+        . (isset($urlParts['fragment']) ? '#' . $urlParts['fragment'] : '');
+}
+
+function slowcloud_rewrite_upload_html($archive, string $html): string
+{
+    $cdnUrl = slowcloud_upload_cdn_url($archive);
+    if ($cdnUrl === '' || $html === '') {
+        return $html;
+    }
+
+    return (string) preg_replace_callback(
+        '/\b(src|href)=("|\')(.*?)\2/i',
+        static function (array $matches) use ($archive): string {
+            return $matches[1] . '=' . $matches[2]
+                . slowcloud_rewrite_upload_url($archive, html_entity_decode($matches[3], ENT_QUOTES, 'UTF-8'))
+                . $matches[2];
+        },
+        $html
+    );
+}
+
+function slowcloud_render_content($archive): void
+{
+    ob_start();
+    $archive->content();
+    echo slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
+}
+
+function slowcloud_render_excerpt($archive, int $length = 180, string $suffix = '...'): void
+{
+    ob_start();
+    $archive->excerpt($length, $suffix);
+    echo slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
 }
 
 function slowcloud_views($archive): int
@@ -442,6 +590,237 @@ function slowcloud_author_bio($archive): string
     }
 
     return slowcloud_intro($archive);
+}
+
+function slowcloud_social_links($archive): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $platforms = [
+        [
+            'key' => 'githubUrl',
+            'name' => 'github',
+            'icon' => 'icon-slowcloudgithub',
+        ],
+        [
+            'key' => 'bilibiliUrl',
+            'name' => 'bilibili',
+            'icon' => 'icon-slowcloudbilibili',
+        ],
+    ];
+
+    $links = [];
+    foreach ($platforms as $platform) {
+        $url = trim((string) ($options->{$platform['key']} ?? ''));
+        if ($url === '') {
+            continue;
+        }
+
+        $links[] = [
+            'name' => $platform['name'],
+            'icon' => $platform['icon'],
+            'url' => $url,
+        ];
+    }
+
+    return $links;
+}
+
+function slowcloud_friend_links($archive): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $raw = trim((string) ($options->friendLinks ?? ''));
+    if ($raw === '') {
+        return [];
+    }
+
+    $links = [];
+    $lines = preg_split('/\r\n|\r|\n/', $raw);
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '|') === false) {
+            continue;
+        }
+
+        [$name, $url] = array_map('trim', explode('|', $line, 2));
+        if ($name === '' || $url === '' || !filter_var($url, FILTER_VALIDATE_URL)) {
+            continue;
+        }
+
+        $links[] = [
+            'name' => $name,
+            'url' => $url,
+        ];
+    }
+
+    return $links;
+}
+
+function slowcloud_site_stats($archive): array
+{
+    static $stats = null;
+
+    if ($stats !== null) {
+        return $stats;
+    }
+
+    $db = \Typecho\Db::get();
+
+    $postStats = $db->fetchRow($db->select([
+        'COUNT(table.contents.cid)' => 'posts',
+        'SUM(table.contents.commentsNum)' => 'comments',
+        'MIN(table.contents.created)' => 'first_created',
+    ])->from('table.contents')
+        ->where('table.contents.type = ?', 'post')
+        ->where('table.contents.status = ?', 'publish'));
+
+    $viewStats = $db->fetchRow($db->select([
+        'SUM(table.fields.int_value)' => 'views',
+    ])->from('table.fields')
+        ->where('table.fields.name = ?', 'views'));
+
+    $firstCreated = isset($postStats['first_created']) ? (int) $postStats['first_created'] : 0;
+    $days = $firstCreated > 0 ? max(1, (int) floor((time() - $firstCreated) / 86400) + 1) : 0;
+
+    $stats = [
+        [
+            'label' => _t('博文数量'),
+            'value' => (string) (int) ($postStats['posts'] ?? 0),
+        ],
+        [
+            'label' => _t('评论数量'),
+            'value' => (string) (int) ($postStats['comments'] ?? 0),
+        ],
+        [
+            'label' => _t('运行时间'),
+            'value' => $days > 0 ? sprintf(_t('%d 天'), $days) : _t('0 天'),
+        ],
+        [
+            'label' => _t('访客数量'),
+            'value' => (string) (int) ($viewStats['views'] ?? 0),
+        ],
+    ];
+
+    return $stats;
+}
+
+function slowcloud_capture_output(callable $callback): string
+{
+    ob_start();
+    $callback();
+    return (string) ob_get_clean();
+}
+
+function slowcloud_timeline_page(): ?array
+{
+    \Widget\Contents\Page\Rows::alloc()->to($pages);
+
+    while ($pages->next()) {
+        if ((string) $pages->template !== 'timeline.php') {
+            continue;
+        }
+
+        return [
+            'title' => (string) $pages->title,
+            'permalink' => (string) $pages->permalink,
+        ];
+    }
+
+    return null;
+}
+
+function slowcloud_timeline_link($archive): string
+{
+    $page = slowcloud_timeline_page();
+    if ($page !== null) {
+        return $page['permalink'];
+    }
+
+    return rtrim((string) (($archive->options ?? \Widget\Options::alloc())->siteUrl ?? ''), '/');
+}
+
+function slowcloud_timeline_summary_text($post): string
+{
+    $summary = slowcloud_capture_output(static function () use ($post): void {
+        $post->excerpt(90, '');
+    });
+
+    $summary = trim(preg_replace('/\s+/u', ' ', strip_tags(html_entity_decode($summary, ENT_QUOTES, 'UTF-8'))));
+    return $summary;
+}
+
+function slowcloud_timeline_category_text($post): string
+{
+    $category = slowcloud_capture_output(static function () use ($post): void {
+        $post->category(' / ', false, _t('未分类'));
+    });
+
+    return trim(preg_replace('/\s+/u', ' ', strip_tags(html_entity_decode($category, ENT_QUOTES, 'UTF-8'))));
+}
+
+function slowcloud_timeline_data(): array
+{
+    $years = [];
+    $stats = [
+        'total' => 0,
+        'months' => 0,
+        'latest' => null,
+        'earliest' => null,
+    ];
+    $monthSet = [];
+
+    \Widget\Contents\Post\Recent::alloc(['pageSize' => 10000])->to($posts);
+
+    while ($posts->next()) {
+        $yearKey = $posts->date->format('Y');
+        $monthKey = $posts->date->format('Y-m');
+
+        if (!isset($years[$yearKey])) {
+            $years[$yearKey] = [
+                'year' => $yearKey,
+                'months' => [],
+            ];
+        }
+
+        if (!isset($years[$yearKey]['months'][$monthKey])) {
+            $years[$yearKey]['months'][$monthKey] = [
+                'key' => $monthKey,
+                'label' => $posts->date->format('m月'),
+                'items' => [],
+            ];
+        }
+
+        $created = (int) $posts->created;
+        $summary = slowcloud_timeline_summary_text($posts);
+        $poster = slowcloud_poster($posts);
+        $years[$yearKey]['months'][$monthKey]['items'][] = [
+            'title' => (string) $posts->title,
+            'permalink' => (string) $posts->permalink,
+            'date' => $posts->date->format('m-d'),
+            'datetime' => $posts->date->format('c'),
+            'category' => slowcloud_timeline_category_text($posts),
+            'views' => slowcloud_views($posts),
+            'summary' => $summary,
+            'poster' => $poster,
+        ];
+
+        $stats['total']++;
+        $monthSet[$monthKey] = true;
+        $stats['latest'] = $stats['latest'] === null ? $created : max($stats['latest'], $created);
+        $stats['earliest'] = $stats['earliest'] === null ? $created : min($stats['earliest'], $created);
+    }
+
+    $stats['months'] = count($monthSet);
+
+    foreach ($years as &$year) {
+        $year['months'] = array_values($year['months']);
+    }
+    unset($year);
+
+    return [
+        'years' => array_values($years),
+        'stats' => $stats,
+    ];
 }
 
 function slowcloud_tab_title($archive): string

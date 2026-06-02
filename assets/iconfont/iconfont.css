@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5187700 */
-  src: url('iconfont.woff2?t=1780222415960') format('woff2'),
-       url('iconfont.woff?t=1780222415960') format('woff'),
-       url('iconfont.ttf?t=1780222415960') format('truetype');
+  src: url('iconfont.woff2?t=1780405909045') format('woff2'),
+       url('iconfont.woff?t=1780405909045') format('woff'),
+       url('iconfont.ttf?t=1780405909045') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,14 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-slowcloudgithub:before {
+  content: "\e799";
+}
+
+.icon-slowcloudbilibili:before {
+  content: "\e78d";
 }
 
 .icon-slowcloudarrow-down:before {

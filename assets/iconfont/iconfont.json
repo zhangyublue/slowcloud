@@ -6,6 +6,20 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "5127345",
+      "name": "github",
+      "font_class": "github",
+      "unicode": "e799",
+      "unicode_decimal": 59289
+    },
+    {
+      "icon_id": "14760434",
+      "name": "bilibili",
+      "font_class": "bilibili",
+      "unicode": "e78d",
+      "unicode_decimal": 59277
+    },
+    {
       "icon_id": "1194333",
       "name": "arrow-down",
       "font_class": "arrow-down",

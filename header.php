@@ -4,6 +4,7 @@
 <?php $slowcloudSiteWidth = slowcloud_site_width($this); ?>
 <?php $slowcloudTabTitle = slowcloud_tab_title($this); ?>
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
+<?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -39,8 +40,12 @@
                 <div class="slowcloud-header-actions">
                     <nav class="slowcloud-site-nav" aria-label="<?php _e('主导航'); ?>">
                         <a href="<?php $this->options->siteUrl(); ?>"><?php _e('首页'); ?></a>
+                        <?php if ($slowcloudTimelinePage !== null): ?>
+                            <a href="<?php echo htmlspecialchars($slowcloudTimelinePage['permalink'], ENT_QUOTES, $this->options->charset); ?>"><?php _e('时光轴'); ?></a>
+                        <?php endif; ?>
                         <?php \Widget\Contents\Page\Rows::alloc()->to($pages); ?>
                         <?php while ($pages->next()): ?>
+                            <?php if ((string) $pages->template === 'timeline.php') continue; ?>
                             <a href="<?php $pages->permalink(); ?>"><?php $pages->title(); ?></a>
                         <?php endwhile; ?>
                     </nav>

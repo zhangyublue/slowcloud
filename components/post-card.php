@@ -14,7 +14,7 @@
 
     <?php if ($poster === ''): ?>
         <div class="slowcloud-entry-content slowcloud-article-excerpt" itemprop="articleBody">
-            <?php $this->excerpt(180, '...'); ?>
+            <?php slowcloud_render_excerpt($this, 180, '...'); ?>
         </div>
     <?php endif; ?>
 
