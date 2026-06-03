@@ -3,9 +3,9 @@
  * A calm, airy personal theme for Typecho
  *
  * @package Slowcloud
- * @author Apple
+ * @author 章鱼
  * @version 0.1.0
- * @link https://example.com/slowcloud
+ * @link https://slowcloud.cn
  */
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
