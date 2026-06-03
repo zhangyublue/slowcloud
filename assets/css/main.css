@@ -30,10 +30,10 @@
     --slowcloud-header-height: 120px;
     --slowcloud-header-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0.12) 100%);
     --slowcloud-header-content-max: 720px;
-    --slowcloud-header-text: var(--slowcloud-text);
-    --slowcloud-header-muted: var(--slowcloud-muted);
-    --slowcloud-header-chip-bg: rgba(255, 255, 255, 0.16);
-    --slowcloud-header-chip-border: rgba(255, 255, 255, 0.22);
+    --slowcloud-header-text: #f8fbff;
+    --slowcloud-header-muted: rgba(241, 247, 255, 0.84);
+    --slowcloud-header-chip-bg: rgba(8, 14, 24, 0.18);
+    --slowcloud-header-chip-border: rgba(255, 255, 255, 0.2);
     --slowcloud-header-chip-text: var(--slowcloud-header-text);
     --slowcloud-bg-gradient:
         linear-gradient(180deg, #f5f5f5 0%, #f5f5f5 100%);
@@ -65,10 +65,10 @@
     --slowcloud-orb-ring: rgba(255, 255, 255, 0.14);
     --slowcloud-button-text: #08111c;
     --slowcloud-header-overlay: linear-gradient(180deg, rgba(8, 14, 24, 0.1) 0%, rgba(8, 14, 24, 0.72) 100%);
-    --slowcloud-header-text: var(--slowcloud-text);
-    --slowcloud-header-muted: var(--slowcloud-muted);
-    --slowcloud-header-chip-bg: rgba(8, 14, 24, 0.28);
-    --slowcloud-header-chip-border: rgba(255, 255, 255, 0.14);
+    --slowcloud-header-text: #f8fbff;
+    --slowcloud-header-muted: rgba(241, 247, 255, 0.84);
+    --slowcloud-header-chip-bg: rgba(8, 14, 24, 0.18);
+    --slowcloud-header-chip-border: rgba(255, 255, 255, 0.2);
     --slowcloud-header-chip-text: var(--slowcloud-header-text);
     --slowcloud-bg-gradient:
         radial-gradient(circle at top left, rgba(71, 115, 179, 0.3), transparent 26%),
@@ -301,17 +301,6 @@ img {
     font-size: 1rem;
 }
 
-.slowcloud-site-header[data-slowcloud-contrast="light"] {
-    --slowcloud-header-text: #f8fbff;
-    --slowcloud-header-muted: rgba(241, 247, 255, 0.84);
-    --slowcloud-header-chip-bg: rgba(8, 14, 24, 0.18);
-    --slowcloud-header-chip-border: rgba(255, 255, 255, 0.2);
-    --slowcloud-header-chip-text: #f8fbff;
-}
-
-:root[data-slowcloud-theme="dark"] .slowcloud-site-header[data-slowcloud-contrast="light"] {
-    --slowcloud-header-overlay: linear-gradient(180deg, rgba(7, 13, 22, 0.08) 0%, rgba(7, 13, 22, 0.64) 100%);
-}
 
 .slowcloud-layout-shell {
     flex: 1;

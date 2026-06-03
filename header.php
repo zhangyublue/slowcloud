@@ -20,7 +20,6 @@
         'author'   => _t('%s 的文章')
     ], '', ' - '); ?><?php echo htmlspecialchars($slowcloudTabTitle, ENT_QUOTES, $this->options->charset); ?></title>
     <link rel="icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
-    <link rel="shortcut icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
     <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
 
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css'); ?>">

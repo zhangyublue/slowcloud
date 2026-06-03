@@ -28,6 +28,7 @@
 
     const applyTheme = (theme) => {
         root.dataset.slowcloudTheme = theme;
+        applyHeaderContrast(theme === 'dark' ? 'light' : 'dark');
 
         if (!toggle) {
             return;
@@ -76,61 +77,7 @@
             return;
         }
 
-        const coverUrl = coverHeader.dataset.slowcloudCover;
-        if (!coverUrl) {
-            coverHeader.dataset.slowcloudContrast = root.dataset.slowcloudTheme === 'dark' ? 'light' : 'dark';
-            return;
-        }
-
-        const image = new Image();
-        image.crossOrigin = 'anonymous';
-        image.decoding = 'async';
-
-        image.onload = () => {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { willReadFrequently: true });
-            if (!context) {
-                applyHeaderContrast('light');
-                return;
-            }
-
-            const sampleWidth = 48;
-            const sampleHeight = 48;
-            canvas.width = sampleWidth;
-            canvas.height = sampleHeight;
-            context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
-
-            const { data } = context.getImageData(0, 0, sampleWidth, sampleHeight);
-            let luminanceSum = 0;
-            let visiblePixels = 0;
-
-            for (let index = 0; index < data.length; index += 4) {
-                const alpha = data[index + 3] / 255;
-                if (alpha < 0.2) {
-                    continue;
-                }
-
-                const red = data[index];
-                const green = data[index + 1];
-                const blue = data[index + 2];
-                luminanceSum += 0.299 * red + 0.587 * green + 0.114 * blue;
-                visiblePixels += 1;
-            }
-
-            if (!visiblePixels) {
-                applyHeaderContrast('light');
-                return;
-            }
-
-            const averageLuminance = luminanceSum / visiblePixels;
-            applyHeaderContrast(averageLuminance > 156 ? 'dark' : 'light');
-        };
-
-        image.onerror = () => {
-            applyHeaderContrast(root.dataset.slowcloudTheme === 'dark' ? 'light' : 'dark');
-        };
-
-        image.src = coverUrl;
+        applyHeaderContrast(root.dataset.slowcloudTheme === 'dark' ? 'light' : 'dark');
     };
 
     detectHeaderContrast();
