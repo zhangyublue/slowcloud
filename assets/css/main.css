@@ -27,7 +27,7 @@
     --slowcloud-orb-ring: rgba(255, 255, 255, 0.2);
     --slowcloud-button-text: #ffffff;
     --slowcloud-header-cover-image: none;
-    --slowcloud-header-height: 100vh;
+    --slowcloud-header-height: 120px;
     --slowcloud-header-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0.12) 100%);
     --slowcloud-header-content-max: 720px;
     --slowcloud-header-text: var(--slowcloud-text);

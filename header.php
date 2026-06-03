@@ -5,6 +5,7 @@
 <?php $slowcloudTabTitle = slowcloud_tab_title($this); ?>
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
 <?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
+<?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -18,11 +19,9 @@
         'tag'      => _t('标签 %s'),
         'author'   => _t('%s 的文章')
     ], '', ' - '); ?><?php echo htmlspecialchars($slowcloudTabTitle, ENT_QUOTES, $this->options->charset); ?></title>
-    <?php if ($this->options->logoUrl): ?>
-        <link rel="icon" href="<?php $this->options->logoUrl(); ?>">
-        <link rel="shortcut icon" href="<?php $this->options->logoUrl(); ?>">
-        <link rel="apple-touch-icon" href="<?php $this->options->logoUrl(); ?>">
-    <?php endif; ?>
+    <link rel="icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
+    <link rel="shortcut icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
+    <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
 
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/css/main.css'); ?>">

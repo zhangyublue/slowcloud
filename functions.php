@@ -122,12 +122,20 @@ HTML);
     return $enhancer;
 }
 
+function slowcloud_theme_asset_url(string $path, $archive = null): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return \Typecho\Common::url(ltrim($path, '/'), (string) ($options->siteUrl ?? ''));
+}
+
 function themeConfig($form)
 {
+    $options = \Widget\Options::alloc();
+
     $tabTitle = new \Typecho\Widget\Helper\Form\Element\Text(
         'tabTitle',
         null,
-        null,
+        'slowcloud',
         _t('浏览器 Tab 文字'),
         _t('用于浏览器标签页显示的文字，不填写时默认使用站点标题')
     );
@@ -136,7 +144,7 @@ function themeConfig($form)
     $logoUrl = new \Typecho\Widget\Helper\Form\Element\Text(
         'logoUrl',
         null,
-        null,
+        \Typecho\Common::url('usr/themes/slowcloud/assets/img/head.png', (string) $options->siteUrl),
         _t('网站 Logo'),
         _t('填写图片 URL 后，主题头部将显示 Logo')
     );
@@ -146,7 +154,7 @@ function themeConfig($form)
     $headerBackgroundUrl = new \Typecho\Widget\Helper\Form\Element\Text(
         'headerBackgroundUrl',
         null,
-        null,
+        \Typecho\Common::url('usr/themes/slowcloud/assets/img/xiyang5.png', (string) $options->siteUrl),
         _t('Header 背景图'),
         _t('填写图片 URL 后，站点头部将使用这张图片作为横幅背景')
     );
@@ -156,9 +164,9 @@ function themeConfig($form)
     $headerHeight = new \Typecho\Widget\Helper\Form\Element\Text(
         'headerHeight',
         null,
-        '100vh',
+        '120px',
         _t('Header 高度'),
-        _t('支持 CSS 高度值，例如 100vh、720px、80vh')
+        _t('支持 CSS 高度值，例如 120px、720px、80vh')
     );
     $form->addInput(slowcloud_assign_settings_group($headerHeight, 'header-display', 'Header 展示设置'));
 
@@ -219,7 +227,7 @@ function themeConfig($form)
     $authorAvatar = new \Typecho\Widget\Helper\Form\Element\Text(
         'authorAvatar',
         null,
-        null,
+        \Typecho\Common::url('usr/themes/slowcloud/assets/img/avatar.jpg', (string) $options->siteUrl),
         _t('博主头像'),
         _t('填写图片 URL，用于内容区左侧信息栏头像')
     );
@@ -229,7 +237,7 @@ function themeConfig($form)
     $authorName = new \Typecho\Widget\Helper\Form\Element\Text(
         'authorName',
         null,
-        null,
+        'slowcloud',
         _t('博主名称'),
         _t('用于内容区左侧信息栏名称，不填写时默认使用站点标题')
     );
@@ -238,7 +246,7 @@ function themeConfig($form)
     $authorBio = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'authorBio',
         null,
-        null,
+        _t('一朵慢慢飘动的云，记录轻盈又真实的日常。'),
         _t('博主描述'),
         _t('用于内容区左侧信息栏描述，不填写时默认使用首页简介')
     );
@@ -564,8 +572,13 @@ function slowcloud_theme_mode($archive): string
 function slowcloud_author_avatar($archive): string
 {
     $options = $archive->options ?? \Widget\Options::alloc();
+    $avatar = trim((string) ($options->authorAvatar ?? ''));
 
-    return trim((string) ($options->authorAvatar ?? ''));
+    if ($avatar !== '') {
+        return $avatar;
+    }
+
+    return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/avatar.jpg', $archive);
 }
 
 function slowcloud_author_name($archive): string
@@ -577,7 +590,7 @@ function slowcloud_author_name($archive): string
         return $name;
     }
 
-    return (string) ($options->title ?? '');
+    return 'slowcloud';
 }
 
 function slowcloud_author_bio($archive): string
@@ -589,7 +602,7 @@ function slowcloud_author_bio($archive): string
         return $bio;
     }
 
-    return slowcloud_intro($archive);
+    return '一朵慢慢飘动的云，记录轻盈又真实的日常。';
 }
 
 function slowcloud_social_links($archive): array
@@ -832,30 +845,47 @@ function slowcloud_tab_title($archive): string
         return $tabTitle;
     }
 
-    return (string) ($options->title ?? '');
+    return 'slowcloud';
 }
 
 function slowcloud_header_background($archive): string
 {
     $options = $archive->options ?? \Widget\Options::alloc();
+    $background = trim((string) ($options->headerBackgroundUrl ?? ''));
 
-    return trim((string) ($options->headerBackgroundUrl ?? ''));
+    if ($background !== '') {
+        return $background;
+    }
+
+    return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/xiyang5.png', $archive);
+}
+
+function slowcloud_logo_url($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $logoUrl = trim((string) ($options->logoUrl ?? ''));
+
+    if ($logoUrl !== '') {
+        return $logoUrl;
+    }
+
+    return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/head.png', $archive);
 }
 
 function slowcloud_header_height($archive): string
 {
     $options = $archive->options ?? \Widget\Options::alloc();
-    $height = trim((string) ($options->headerHeight ?? '100vh'));
+    $height = trim((string) ($options->headerHeight ?? '120px'));
 
     if ($height === '') {
-        return '100vh';
+        return '120px';
     }
 
     if (preg_match('/^\d+(\.\d+)?(px|vh|vw|rem|em|%)$/', $height)) {
         return $height;
     }
 
-    return '100vh';
+    return '120px';
 }
 
 function slowcloud_site_width($archive): string
