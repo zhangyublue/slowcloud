@@ -255,7 +255,7 @@ function themeConfig($form)
     $githubUrl = new \Typecho\Widget\Helper\Form\Element\Text(
         'githubUrl',
         null,
-        null,
+        'https://github.com',
         _t('GitHub 地址'),
         _t('填写后会显示在左侧作者区域，例如 https://github.com/your-name')
     );
@@ -265,7 +265,7 @@ function themeConfig($form)
     $bilibiliUrl = new \Typecho\Widget\Helper\Form\Element\Text(
         'bilibiliUrl',
         null,
-        null,
+        'https://bilibili.com',
         _t('Bilibili 地址'),
         _t('填写后会显示在左侧作者区域，例如 https://space.bilibili.com/123456')
     );
@@ -275,7 +275,7 @@ function themeConfig($form)
     $friendLinks = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'friendLinks',
         null,
-        null,
+        "派大星|https://baidu.com\n海绵宝宝|https://baidu.com\n蟹老板|https://baidu.com\n泡芙阿姨|https://baidu.com",
         _t('友链列表'),
         _t('每行一条，格式为 名称|https://example.com ，例如 OpenAI|https://openai.com')
     );
