@@ -941,7 +941,7 @@ img {
 
 .slowcloud-sidebar-card-category > ul {
     background: var(--slowcloud-sidebar-list-bg);
-    padding: 14px 0;
+    padding: 0;
 }
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud {

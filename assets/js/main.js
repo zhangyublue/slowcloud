@@ -26,6 +26,14 @@
         return mediaQuery.matches ? 'dark' : 'light';
     };
 
+    const applyHeaderContrast = (mode) => {
+        if (!coverHeader) {
+            return;
+        }
+
+        coverHeader.dataset.slowcloudContrast = mode;
+    };
+
     const applyTheme = (theme) => {
         root.dataset.slowcloudTheme = theme;
         applyHeaderContrast(theme === 'dark' ? 'light' : 'dark');
@@ -63,14 +71,6 @@
     } else if (typeof mediaQuery.addListener === 'function') {
         mediaQuery.addListener(syncSystemTheme);
     }
-
-    const applyHeaderContrast = (mode) => {
-        if (!coverHeader) {
-            return;
-        }
-
-        coverHeader.dataset.slowcloudContrast = mode;
-    };
 
     const detectHeaderContrast = () => {
         if (!coverHeader) {
