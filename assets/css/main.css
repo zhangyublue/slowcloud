@@ -535,8 +535,28 @@ img {
 }
 
 .slowcloud-article-card .slowcloud-article-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     font-size: 1.18rem;
     line-height: 1.28;
+}
+
+.slowcloud-article-category-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 12px 0 12px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    background: #df2f24;
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 6px 50%, 0 0);
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .slowcloud-article-detail .slowcloud-article-title {

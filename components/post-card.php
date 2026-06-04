@@ -8,6 +8,10 @@
 
     <header class="slowcloud-article-header">
         <h2 class="slowcloud-article-title" itemprop="name headline">
+            <?php $primaryCategory = slowcloud_primary_category($this); ?>
+            <?php if ($primaryCategory !== ''): ?>
+                <span class="slowcloud-article-category-tag"><?php echo htmlspecialchars($primaryCategory, ENT_QUOTES, $this->options->charset); ?></span>
+            <?php endif; ?>
             <a href="<?php $this->permalink(); ?>" itemprop="url"><?php $this->title(); ?></a>
         </h2>
     </header>

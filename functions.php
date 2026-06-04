@@ -771,6 +771,23 @@ function slowcloud_timeline_category_text($post): string
     return trim(preg_replace('/\s+/u', ' ', strip_tags(html_entity_decode($category, ENT_QUOTES, 'UTF-8'))));
 }
 
+function slowcloud_primary_category($archive): string
+{
+    $categories = $archive->categories ?? [];
+    if (empty($categories)) {
+        return '';
+    }
+
+    foreach ($categories as $category) {
+        if ((int) ($category['parent'] ?? 0) > 0) {
+            return trim((string) ($category['name'] ?? ''));
+        }
+    }
+
+    $lastCategory = end($categories);
+    return trim((string) (($lastCategory['name'] ?? '') ?: ($categories[0]['name'] ?? '')));
+}
+
 function slowcloud_timeline_data(): array
 {
     $years = [];
