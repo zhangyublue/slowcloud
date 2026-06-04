@@ -357,6 +357,11 @@ function themeConfig($form)
     $form->addInput(slowcloud_theme_settings_enhancer());
 }
 
+function themeConfigHandle($settings, $isInit): void
+{
+    slowcloud_register_stats_panel();
+}
+
 function postMeta(\Widget\Archive $archive, string $metaType = 'archive')
 {
     $titleTag = $metaType === 'archive' ? 'h2' : 'h1';
@@ -729,6 +734,7 @@ function slowcloud_site_stats($archive): array
         'SUM(table.fields.int_value)' => 'views',
     ])->from('table.fields')
         ->where('table.fields.name = ?', 'views'));
+    $trafficStats = slowcloud_stats_overview();
 
     $firstCreated = isset($postStats['first_created']) ? (int) $postStats['first_created'] : 0;
     $days = $firstCreated > 0 ? max(1, (int) floor((time() - $firstCreated) / 86400) + 1) : 0;
@@ -747,7 +753,11 @@ function slowcloud_site_stats($archive): array
             'value' => $days > 0 ? sprintf(_t('%d 天'), $days) : _t('0 天'),
         ],
         [
-            'label' => _t('访客数量'),
+            'label' => _t('访问数量'),
+            'value' => (string) $trafficStats['total_pv'],
+        ],
+        [
+            'label' => _t('文章浏览'),
             'value' => (string) (int) ($viewStats['views'] ?? 0),
         ],
     ];
@@ -991,6 +1001,508 @@ function slowcloud_main_background($archive): string
     return $value !== '' ? $value : 'transparent';
 }
 
+function slowcloud_register_stats_panel(): void
+{
+    static $registered = false;
+
+    if ($registered) {
+        return;
+    }
+
+    $registered = true;
+    $options = \Widget\Options::alloc();
+    if ((string) ($options->theme ?? '') !== 'slowcloud') {
+        return;
+    }
+
+    $panelFile = 'SlowcloudStats/panel.php';
+    $panelTable = $options->panelTable ?? [];
+    $panelUrl = 'extending.php?panel=' . urlencode($panelFile);
+
+    foreach (($panelTable['child'][4] ?? []) as $panel) {
+        if (($panel[2] ?? '') === $panelUrl) {
+            return;
+        }
+    }
+
+    \Utils\Helper::addPanel(4, $panelFile, _t('Slowcloud 统计'), _t('Slowcloud 统计'), 'administrator');
+}
+
+function slowcloud_stats_table(string $suffix): string
+{
+    return \Typecho\Db::get()->getPrefix() . 'slowcloud_' . $suffix;
+}
+
+function slowcloud_stats_option_name(string $name): string
+{
+    $map = [
+        'stats_schema_version' => 'sc_stats_ver',
+    ];
+
+    return $map[$name] ?? ('sc_' . substr(sha1($name), 0, 20));
+}
+
+function slowcloud_stats_get_option(string $name): ?string
+{
+    $db = \Typecho\Db::get();
+    $row = $db->fetchRow($db->select('value')
+        ->from('table.options')
+        ->where('name = ? AND user = ?', slowcloud_stats_option_name($name), 0)
+        ->limit(1));
+
+    return $row !== null && isset($row['value']) ? (string) $row['value'] : null;
+}
+
+function slowcloud_stats_set_option(string $name, string $value): void
+{
+    $db = \Typecho\Db::get();
+    $optionName = slowcloud_stats_option_name($name);
+    $exists = $db->fetchRow($db->select('name')
+        ->from('table.options')
+        ->where('name = ? AND user = ?', $optionName, 0)
+        ->limit(1));
+
+    if ($exists) {
+        $db->query($db->update('table.options')
+            ->rows(['value' => $value])
+            ->where('name = ? AND user = ?', $optionName, 0));
+        return;
+    }
+
+    $db->query($db->insert('table.options')->rows([
+        'name' => $optionName,
+        'user' => 0,
+        'value' => $value,
+    ]));
+}
+
+function slowcloud_stats_storage_version(): string
+{
+    return '1';
+}
+
+function slowcloud_ensure_stats_storage(): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    $ensured = true;
+    if (slowcloud_stats_get_option('stats_schema_version') === slowcloud_stats_storage_version()) {
+        return;
+    }
+
+    slowcloud_create_stats_tables();
+    slowcloud_stats_set_option('stats_schema_version', slowcloud_stats_storage_version());
+}
+
+function slowcloud_create_stats_tables(): void
+{
+    $db = \Typecho\Db::get();
+    $adapter = $db->getAdapterName();
+    $dailyTable = slowcloud_stats_table('stats_daily');
+    $visitorsTable = slowcloud_stats_table('visitors');
+    $visitsTable = slowcloud_stats_table('visits');
+
+    if (stripos($adapter, 'SQLite') !== false) {
+        $queries = [
+            "CREATE TABLE IF NOT EXISTS {$dailyTable} (
+                stat_date varchar(10) NOT NULL PRIMARY KEY,
+                pv int(10) NOT NULL DEFAULT 0,
+                uv int(10) NOT NULL DEFAULT 0,
+                created int(10) NOT NULL DEFAULT 0,
+                modified int(10) NOT NULL DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS {$visitorsTable} (
+                id INTEGER NOT NULL PRIMARY KEY,
+                visitor_id varchar(64) NOT NULL,
+                stat_date varchar(10) NOT NULL,
+                first_visit int(10) NOT NULL DEFAULT 0,
+                last_visit int(10) NOT NULL DEFAULT 0,
+                ip varchar(64) DEFAULT NULL,
+                ip_hash varchar(64) DEFAULT NULL,
+                user_agent varchar(511) DEFAULT NULL,
+                referer varchar(255) DEFAULT NULL,
+                path varchar(255) DEFAULT NULL,
+                page_type varchar(32) DEFAULT NULL
+            )",
+            "CREATE UNIQUE INDEX IF NOT EXISTS {$visitorsTable}_visitor_date ON {$visitorsTable} (visitor_id, stat_date)",
+            "CREATE INDEX IF NOT EXISTS {$visitorsTable}_stat_date ON {$visitorsTable} (stat_date)",
+            "CREATE INDEX IF NOT EXISTS {$visitorsTable}_last_visit ON {$visitorsTable} (last_visit)",
+            "CREATE TABLE IF NOT EXISTS {$visitsTable} (
+                id INTEGER NOT NULL PRIMARY KEY,
+                visitor_id varchar(64) NOT NULL,
+                stat_date varchar(10) NOT NULL,
+                visited_at int(10) NOT NULL DEFAULT 0,
+                ip varchar(64) DEFAULT NULL,
+                ip_hash varchar(64) DEFAULT NULL,
+                user_agent varchar(511) DEFAULT NULL,
+                referer varchar(255) DEFAULT NULL,
+                path varchar(255) DEFAULT NULL,
+                page_type varchar(32) DEFAULT NULL
+            )",
+            "CREATE INDEX IF NOT EXISTS {$visitsTable}_stat_date ON {$visitsTable} (stat_date)",
+            "CREATE INDEX IF NOT EXISTS {$visitsTable}_visited_at ON {$visitsTable} (visited_at)",
+            "CREATE INDEX IF NOT EXISTS {$visitsTable}_ip_hash ON {$visitsTable} (ip_hash)",
+        ];
+    } elseif (stripos($adapter, 'Pgsql') !== false) {
+        $queries = [
+            "CREATE TABLE IF NOT EXISTS {$dailyTable} (
+                stat_date varchar(10) NOT NULL PRIMARY KEY,
+                pv int NOT NULL DEFAULT 0,
+                uv int NOT NULL DEFAULT 0,
+                created int NOT NULL DEFAULT 0,
+                modified int NOT NULL DEFAULT 0
+            )",
+            "CREATE TABLE IF NOT EXISTS {$visitorsTable} (
+                id SERIAL PRIMARY KEY,
+                visitor_id varchar(64) NOT NULL,
+                stat_date varchar(10) NOT NULL,
+                first_visit int NOT NULL DEFAULT 0,
+                last_visit int NOT NULL DEFAULT 0,
+                ip varchar(64) DEFAULT NULL,
+                ip_hash varchar(64) DEFAULT NULL,
+                user_agent varchar(511) DEFAULT NULL,
+                referer varchar(255) DEFAULT NULL,
+                path varchar(255) DEFAULT NULL,
+                page_type varchar(32) DEFAULT NULL
+            )",
+            "CREATE UNIQUE INDEX IF NOT EXISTS {$visitorsTable}_visitor_date ON {$visitorsTable} (visitor_id, stat_date)",
+            "CREATE INDEX IF NOT EXISTS {$visitorsTable}_stat_date ON {$visitorsTable} (stat_date)",
+            "CREATE INDEX IF NOT EXISTS {$visitorsTable}_last_visit ON {$visitorsTable} (last_visit)",
+            "CREATE TABLE IF NOT EXISTS {$visitsTable} (
+                id SERIAL PRIMARY KEY,
+                visitor_id varchar(64) NOT NULL,
+                stat_date varchar(10) NOT NULL,
+                visited_at int NOT NULL DEFAULT 0,
+                ip varchar(64) DEFAULT NULL,
+                ip_hash varchar(64) DEFAULT NULL,
+                user_agent varchar(511) DEFAULT NULL,
+                referer varchar(255) DEFAULT NULL,
+                path varchar(255) DEFAULT NULL,
+                page_type varchar(32) DEFAULT NULL
+            )",
+            "CREATE INDEX IF NOT EXISTS {$visitsTable}_stat_date ON {$visitsTable} (stat_date)",
+            "CREATE INDEX IF NOT EXISTS {$visitsTable}_visited_at ON {$visitsTable} (visited_at)",
+            "CREATE INDEX IF NOT EXISTS {$visitsTable}_ip_hash ON {$visitsTable} (ip_hash)",
+        ];
+    } else {
+        $queries = [
+            "CREATE TABLE IF NOT EXISTS `{$dailyTable}` (
+                `stat_date` varchar(10) NOT NULL,
+                `pv` int(10) unsigned NOT NULL DEFAULT 0,
+                `uv` int(10) unsigned NOT NULL DEFAULT 0,
+                `created` int(10) unsigned NOT NULL DEFAULT 0,
+                `modified` int(10) unsigned NOT NULL DEFAULT 0,
+                PRIMARY KEY (`stat_date`)
+            )",
+            "CREATE TABLE IF NOT EXISTS `{$visitorsTable}` (
+                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+                `visitor_id` varchar(64) NOT NULL,
+                `stat_date` varchar(10) NOT NULL,
+                `first_visit` int(10) unsigned NOT NULL DEFAULT 0,
+                `last_visit` int(10) unsigned NOT NULL DEFAULT 0,
+                `ip` varchar(64) DEFAULT NULL,
+                `ip_hash` varchar(64) DEFAULT NULL,
+                `user_agent` varchar(511) DEFAULT NULL,
+                `referer` varchar(255) DEFAULT NULL,
+                `path` varchar(255) DEFAULT NULL,
+                `page_type` varchar(32) DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `visitor_date` (`visitor_id`, `stat_date`),
+                KEY `stat_date` (`stat_date`),
+                KEY `last_visit` (`last_visit`)
+            )",
+            "CREATE TABLE IF NOT EXISTS `{$visitsTable}` (
+                `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+                `visitor_id` varchar(64) NOT NULL,
+                `stat_date` varchar(10) NOT NULL,
+                `visited_at` int(10) unsigned NOT NULL DEFAULT 0,
+                `ip` varchar(64) DEFAULT NULL,
+                `ip_hash` varchar(64) DEFAULT NULL,
+                `user_agent` varchar(511) DEFAULT NULL,
+                `referer` varchar(255) DEFAULT NULL,
+                `path` varchar(255) DEFAULT NULL,
+                `page_type` varchar(32) DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `stat_date` (`stat_date`),
+                KEY `visited_at` (`visited_at`),
+                KEY `ip_hash` (`ip_hash`)
+            )",
+        ];
+    }
+
+    foreach ($queries as $query) {
+        $db->query($query);
+    }
+}
+
+function slowcloud_generate_visitor_id(): string
+{
+    try {
+        return bin2hex(random_bytes(16));
+    } catch (\Throwable $e) {
+        return sha1(uniqid('slowcloud_', true));
+    }
+}
+
+function slowcloud_stats_visitor_id(): string
+{
+    $cookieKey = 'slowcloud_visitor_id';
+    $visitorId = trim((string) \Typecho\Cookie::get($cookieKey, ''));
+
+    if ($visitorId !== '') {
+        return $visitorId;
+    }
+
+    $visitorId = slowcloud_generate_visitor_id();
+    \Typecho\Cookie::set($cookieKey, $visitorId, time() + 315360000);
+
+    return $visitorId;
+}
+
+function slowcloud_should_track_request($archive): bool
+{
+    $request = $archive->request ?? \Widget\Options::alloc()->request;
+    $user = \Widget\User::alloc();
+
+    if (php_sapi_name() === 'cli') {
+        return false;
+    }
+
+    if ($user->hasLogin() && $user->pass('administrator', true)) {
+        return false;
+    }
+
+    $requestMethod = strtoupper((string) $request->getServer('REQUEST_METHOD', 'GET'));
+    if ($requestMethod !== 'GET' && $requestMethod !== 'HEAD') {
+        return false;
+    }
+
+    $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
+    foreach (['bot', 'spider', 'crawler', 'curl', 'wget', 'python-requests'] as $needle) {
+        if ($userAgent !== '' && strpos($userAgent, $needle) !== false) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function slowcloud_stats_page_type($archive): string
+{
+    if ($archive->is('post')) {
+        return 'post';
+    }
+
+    if ($archive->is('page')) {
+        return 'page';
+    }
+
+    if ($archive->is('index')) {
+        return 'index';
+    }
+
+    if ($archive->is('category')) {
+        return 'category';
+    }
+
+    if ($archive->is('tag')) {
+        return 'tag';
+    }
+
+    if ($archive->is('search')) {
+        return 'search';
+    }
+
+    if ($archive->is('author')) {
+        return 'author';
+    }
+
+    if ($archive->is('archive')) {
+        return 'archive';
+    }
+
+    if ($archive->is('404')) {
+        return '404';
+    }
+
+    return 'other';
+}
+
+function slowcloud_update_daily_stats(string $statDate, int $time, bool $increaseUv): void
+{
+    $db = \Typecho\Db::get();
+    $table = slowcloud_stats_table('stats_daily');
+    $row = $db->fetchRow($db->select()
+        ->from($table)
+        ->where('stat_date = ?', $statDate)
+        ->limit(1));
+
+    if ($row) {
+        $db->query($db->update($table)->rows([
+            'pv' => (int) ($row['pv'] ?? 0) + 1,
+            'uv' => (int) ($row['uv'] ?? 0) + ($increaseUv ? 1 : 0),
+            'modified' => $time,
+        ])->where('stat_date = ?', $statDate));
+        return;
+    }
+
+    $db->query($db->insert($table)->rows([
+        'stat_date' => $statDate,
+        'pv' => 1,
+        'uv' => $increaseUv ? 1 : 0,
+        'created' => $time,
+        'modified' => $time,
+    ]));
+}
+
+function slowcloud_track_site_visit($archive): void
+{
+    try {
+        if (!slowcloud_should_track_request($archive)) {
+            return;
+        }
+
+        slowcloud_ensure_stats_storage();
+
+        $db = \Typecho\Db::get();
+        $request = $archive->request ?? \Widget\Options::alloc()->request;
+        $time = time();
+        $statDate = date('Y-m-d', $time);
+        $visitorId = slowcloud_stats_visitor_id();
+        $path = substr((string) $request->getRequestUrl(), 0, 255);
+        $pageType = slowcloud_stats_page_type($archive);
+        $ip = substr((string) $request->getIp(), 0, 64);
+        $ipHash = sha1($ip);
+        $userAgent = substr((string) $request->getServer('HTTP_USER_AGENT', ''), 0, 511);
+        $referer = substr((string) ($request->getReferer() ?? ''), 0, 255);
+
+        $db->query($db->insert(slowcloud_stats_table('visits'))->rows([
+            'visitor_id' => $visitorId,
+            'stat_date' => $statDate,
+            'visited_at' => $time,
+            'ip' => $ip,
+            'ip_hash' => $ipHash,
+            'user_agent' => $userAgent,
+            'referer' => $referer,
+            'path' => $path,
+            'page_type' => $pageType,
+        ]));
+
+        $visitorsTable = slowcloud_stats_table('visitors');
+        $visitorRow = $db->fetchRow($db->select()
+            ->from($visitorsTable)
+            ->where('visitor_id = ? AND stat_date = ?', $visitorId, $statDate)
+            ->limit(1));
+
+        $increaseUv = !$visitorRow;
+        if ($visitorRow) {
+            $db->query($db->update($visitorsTable)->rows([
+                'last_visit' => $time,
+                'ip' => $ip,
+                'ip_hash' => $ipHash,
+                'user_agent' => $userAgent,
+                'referer' => $referer,
+                'path' => $path,
+                'page_type' => $pageType,
+            ])->where('id = ?', $visitorRow['id']));
+        } else {
+            $db->query($db->insert($visitorsTable)->rows([
+                'visitor_id' => $visitorId,
+                'stat_date' => $statDate,
+                'first_visit' => $time,
+                'last_visit' => $time,
+                'ip' => $ip,
+                'ip_hash' => $ipHash,
+                'user_agent' => $userAgent,
+                'referer' => $referer,
+                'path' => $path,
+                'page_type' => $pageType,
+            ]));
+        }
+
+        slowcloud_update_daily_stats($statDate, $time, $increaseUv);
+    } catch (\Throwable $e) {
+    }
+}
+
+function slowcloud_stats_overview(): array
+{
+    slowcloud_ensure_stats_storage();
+
+    $db = \Typecho\Db::get();
+    $dailyTable = slowcloud_stats_table('stats_daily');
+    $visitsTable = slowcloud_stats_table('visits');
+    $today = date('Y-m-d');
+
+    $totalRow = $db->fetchRow($db->select([
+        'SUM(pv)' => 'total_pv',
+        'SUM(uv)' => 'total_uv',
+    ])->from($dailyTable));
+
+    $todayRow = $db->fetchRow($db->select()
+        ->from($dailyTable)
+        ->where('stat_date = ?', $today)
+        ->limit(1));
+
+    $todayIpRow = $db->fetchRow("SELECT COUNT(DISTINCT ip_hash) AS total FROM {$visitsTable} WHERE stat_date = '{$today}'");
+
+    return [
+        'total_pv' => (int) ($totalRow['total_pv'] ?? 0),
+        'total_uv' => (int) ($totalRow['total_uv'] ?? 0),
+        'today_pv' => (int) ($todayRow['pv'] ?? 0),
+        'today_uv' => (int) ($todayRow['uv'] ?? 0),
+        'today_ips' => (int) ($todayIpRow['total'] ?? 0),
+    ];
+}
+
+function slowcloud_stats_recent_visits(int $limit = 20): array
+{
+    slowcloud_ensure_stats_storage();
+
+    $db = \Typecho\Db::get();
+    $rows = $db->fetchAll($db->select()
+        ->from(slowcloud_stats_table('visits'))
+        ->order('visited_at', \Typecho\Db::SORT_DESC)
+        ->limit($limit));
+
+    return is_array($rows) ? $rows : [];
+}
+
+function slowcloud_stats_daily_series(int $days = 7): array
+{
+    slowcloud_ensure_stats_storage();
+
+    $db = \Typecho\Db::get();
+    $rows = $db->fetchAll($db->select()
+        ->from(slowcloud_stats_table('stats_daily'))
+        ->order('stat_date', \Typecho\Db::SORT_DESC)
+        ->limit($days));
+
+    $map = [];
+    foreach ((array) $rows as $row) {
+        $map[(string) $row['stat_date']] = [
+            'pv' => (int) ($row['pv'] ?? 0),
+            'uv' => (int) ($row['uv'] ?? 0),
+        ];
+    }
+
+    $series = [];
+    for ($offset = $days - 1; $offset >= 0; $offset--) {
+        $date = date('Y-m-d', strtotime("-{$offset} days"));
+        $series[] = [
+            'date' => $date,
+            'pv' => (int) ($map[$date]['pv'] ?? 0),
+            'uv' => (int) ($map[$date]['uv'] ?? 0),
+        ];
+    }
+
+    return $series;
+}
+
 function slowcloud_icp_beian($archive): string
 {
     $options = $archive->options ?? \Widget\Options::alloc();
@@ -1026,3 +1538,5 @@ function slowcloud_public_security_beian_url($archive): string
 
     return 'https://beian.mps.gov.cn/#/query/webSearch';
 }
+
+slowcloud_register_stats_panel();
