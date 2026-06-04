@@ -122,6 +122,213 @@ HTML);
     return $enhancer;
 }
 
+function slowcloud_theme_stats_panel(): \Typecho\Widget\Helper\Form\Element\Fake
+{
+    $panel = new \Typecho\Widget\Helper\Form\Element\Fake('slowcloud_theme_stats_panel', '');
+
+    try {
+        $overview = slowcloud_stats_overview();
+        $series = slowcloud_stats_daily_series(7);
+        $recentVisits = slowcloud_stats_recent_visits(12);
+        $error = null;
+    } catch (\Throwable $e) {
+        $overview = [
+            'total_pv' => 0,
+            'total_uv' => 0,
+            'today_pv' => 0,
+            'today_uv' => 0,
+            'today_ips' => 0,
+        ];
+        $series = [];
+        $recentVisits = [];
+        $error = $e->getMessage();
+    }
+
+    $maxPv = 1;
+    $maxUv = 1;
+    foreach ($series as $item) {
+        $maxPv = max($maxPv, (int) ($item['pv'] ?? 0));
+        $maxUv = max($maxUv, (int) ($item['uv'] ?? 0));
+    }
+
+    ob_start();
+    ?>
+<style>
+.slowcloud-stats-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.slowcloud-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+.slowcloud-stats-card {
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+}
+.slowcloud-stats-card span {
+    display: block;
+    margin-bottom: 6px;
+    color: #6b7280;
+    font-size: 12px;
+}
+.slowcloud-stats-card strong {
+    font-size: 24px;
+    line-height: 1.2;
+    color: #111827;
+}
+.slowcloud-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.slowcloud-stats-table th,
+.slowcloud-stats-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 12px;
+}
+.slowcloud-stats-table th {
+    color: #475569;
+}
+.slowcloud-stats-table td {
+    color: #111827;
+}
+.slowcloud-stats-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    overflow: hidden;
+}
+.slowcloud-stats-bar > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: #ef4444;
+}
+.slowcloud-stats-bar--uv > span {
+    background: #f59e0b;
+}
+.slowcloud-stats-meta {
+    color: #94a3b8;
+    font-size: 12px;
+}
+.slowcloud-stats-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+</style>
+<div class="slowcloud-stats-panel">
+    <?php if ($error !== null): ?>
+        <div class="message error">
+            <p><?php echo htmlspecialchars(_t('统计数据读取失败：%s', $error), ENT_QUOTES, 'UTF-8'); ?></p>
+        </div>
+    <?php else: ?>
+        <div class="slowcloud-stats-grid">
+            <section class="slowcloud-stats-card">
+                <span><?php _e('今日 UV'); ?></span>
+                <strong><?php echo (int) $overview['today_uv']; ?></strong>
+            </section>
+            <section class="slowcloud-stats-card">
+                <span><?php _e('今日 PV'); ?></span>
+                <strong><?php echo (int) $overview['today_pv']; ?></strong>
+            </section>
+            <section class="slowcloud-stats-card">
+                <span><?php _e('累计 UV'); ?></span>
+                <strong><?php echo (int) $overview['total_uv']; ?></strong>
+            </section>
+            <section class="slowcloud-stats-card">
+                <span><?php _e('累计 PV'); ?></span>
+                <strong><?php echo (int) $overview['total_pv']; ?></strong>
+            </section>
+            <section class="slowcloud-stats-card">
+                <span><?php _e('今日 IP 数'); ?></span>
+                <strong><?php echo (int) $overview['today_ips']; ?></strong>
+            </section>
+        </div>
+
+        <div>
+            <h4><?php _e('最近 7 天趋势'); ?></h4>
+            <table class="slowcloud-stats-table">
+                <thead>
+                <tr>
+                    <th><?php _e('日期'); ?></th>
+                    <th><?php _e('PV'); ?></th>
+                    <th><?php _e('PV 趋势'); ?></th>
+                    <th><?php _e('UV'); ?></th>
+                    <th><?php _e('UV 趋势'); ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($series as $item): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars((string) $item['date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php echo (int) $item['pv']; ?></td>
+                        <td>
+                            <div class="slowcloud-stats-bar">
+                                <span style="width: <?php echo round(((int) $item['pv'] / $maxPv) * 100, 2); ?>%;"></span>
+                            </div>
+                        </td>
+                        <td><?php echo (int) $item['uv']; ?></td>
+                        <td>
+                            <div class="slowcloud-stats-bar slowcloud-stats-bar--uv">
+                                <span style="width: <?php echo round(((int) $item['uv'] / $maxUv) * 100, 2); ?>%;"></span>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <h4><?php _e('最近访问记录'); ?></h4>
+            <table class="slowcloud-stats-table">
+                <thead>
+                <tr>
+                    <th><?php _e('访问时间'); ?></th>
+                    <th><?php _e('类型'); ?></th>
+                    <th><?php _e('IP'); ?></th>
+                    <th><?php _e('路径'); ?></th>
+                    <th><?php _e('访客 ID'); ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if (!empty($recentVisits)): ?>
+                    <?php foreach ($recentVisits as $visit): ?>
+                        <tr>
+                            <td>
+                                <?php echo date('Y-m-d H:i:s', (int) ($visit['visited_at'] ?? 0)); ?>
+                                <div class="slowcloud-stats-meta"><?php echo htmlspecialchars((string) ($visit['user_agent'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></div>
+                            </td>
+                            <td><?php echo htmlspecialchars((string) ($visit['page_type'] ?? 'other'), ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><span class="slowcloud-stats-code"><?php echo htmlspecialchars((string) ($visit['ip'] ?? 'unknown'), ENT_QUOTES, 'UTF-8'); ?></span></td>
+                            <td><span class="slowcloud-stats-code"><?php echo htmlspecialchars((string) ($visit['path'] ?? '/'), ENT_QUOTES, 'UTF-8'); ?></span></td>
+                            <td><span class="slowcloud-stats-code"><?php echo htmlspecialchars(substr((string) ($visit['visitor_id'] ?? ''), 0, 16), ENT_QUOTES, 'UTF-8'); ?></span></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="5"><?php _e('暂时还没有访问统计数据。'); ?></td>
+                    </tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
+<?php
+    $panel->description((string) ob_get_clean());
+    return slowcloud_assign_settings_group($panel, 'theme-stats', '访问统计');
+}
+
 function slowcloud_theme_asset_url(string $path, $archive = null): string
 {
     $options = $archive->options ?? \Widget\Options::alloc();
@@ -359,7 +566,6 @@ function themeConfig($form)
 
 function themeConfigHandle($settings, $isInit): void
 {
-    slowcloud_register_stats_panel();
 }
 
 function postMeta(\Widget\Archive $archive, string $metaType = 'archive')
@@ -1001,31 +1207,20 @@ function slowcloud_main_background($archive): string
     return $value !== '' ? $value : 'transparent';
 }
 
-function slowcloud_register_stats_panel(): void
+function slowcloud_unregister_legacy_stats_panel(): void
 {
-    static $registered = false;
+    static $removed = false;
 
-    if ($registered) {
+    if ($removed) {
         return;
     }
 
-    $registered = true;
-    $options = \Widget\Options::alloc();
-    if ((string) ($options->theme ?? '') !== 'slowcloud') {
-        return;
+    $removed = true;
+
+    try {
+        \Utils\Helper::removePanel(4, 'SlowcloudStats/panel.php');
+    } catch (\Throwable $e) {
     }
-
-    $panelFile = 'SlowcloudStats/panel.php';
-    $panelTable = $options->panelTable ?? [];
-    $panelUrl = 'extending.php?panel=' . urlencode($panelFile);
-
-    foreach (($panelTable['child'][4] ?? []) as $panel) {
-        if (($panel[2] ?? '') === $panelUrl) {
-            return;
-        }
-    }
-
-    \Utils\Helper::addPanel(4, $panelFile, _t('Slowcloud 统计'), _t('Slowcloud 统计'), 'administrator');
 }
 
 function slowcloud_stats_table(string $suffix): string
@@ -1538,5 +1733,3 @@ function slowcloud_public_security_beian_url($archive): string
 
     return 'https://beian.mps.gov.cn/#/query/webSearch';
 }
-
-slowcloud_register_stats_panel();
