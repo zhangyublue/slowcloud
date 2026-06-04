@@ -316,6 +316,44 @@ function themeConfig($form)
     $uploadCdnUrl->addRule('url', _t('请填写正确的 URL 地址'));
     $form->addInput(slowcloud_assign_settings_group($uploadCdnUrl, 'content-delivery', '内容分发设置'));
 
+    $icpBeian = new \Typecho\Widget\Helper\Form\Element\Text(
+        'icpBeian',
+        null,
+        null,
+        _t('ICP备案号'),
+        _t('例如 京ICP备12345678号，仅填写展示文本即可')
+    );
+    $form->addInput(slowcloud_assign_settings_group($icpBeian, 'site-compliance', '备案信息设置'));
+
+    $icpBeianUrl = new \Typecho\Widget\Helper\Form\Element\Text(
+        'icpBeianUrl',
+        null,
+        'https://beian.miit.gov.cn/',
+        _t('ICP备案链接'),
+        _t('可选，填写备案跳转地址；不填写时默认跳转到工信部备案管理系统')
+    );
+    $icpBeianUrl->addRule('url', _t('请填写正确的 URL 地址'));
+    $form->addInput(slowcloud_assign_settings_group($icpBeianUrl, 'site-compliance', '备案信息设置'));
+
+    $publicSecurityBeian = new \Typecho\Widget\Helper\Form\Element\Text(
+        'publicSecurityBeian',
+        null,
+        null,
+        _t('公安联网备案号'),
+        _t('例如 京公网安备11000002000001号，仅填写展示文本即可')
+    );
+    $form->addInput(slowcloud_assign_settings_group($publicSecurityBeian, 'site-compliance', '备案信息设置'));
+
+    $publicSecurityBeianUrl = new \Typecho\Widget\Helper\Form\Element\Text(
+        'publicSecurityBeianUrl',
+        null,
+        'https://beian.mps.gov.cn/#/query/webSearch',
+        _t('公安联网备案链接'),
+        _t('可选，填写备案跳转地址；不填写时默认跳转到全国互联网安全管理服务平台')
+    );
+    $publicSecurityBeianUrl->addRule('url', _t('请填写正确的 URL 地址'));
+    $form->addInput(slowcloud_assign_settings_group($publicSecurityBeianUrl, 'site-compliance', '备案信息设置'));
+
     $form->addInput(slowcloud_theme_settings_enhancer());
 }
 
@@ -951,4 +989,40 @@ function slowcloud_main_background($archive): string
     $value = trim((string) ($options->mainBackground ?? ''));
 
     return $value !== '' ? $value : 'transparent';
+}
+
+function slowcloud_icp_beian($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return trim((string) ($options->icpBeian ?? ''));
+}
+
+function slowcloud_icp_beian_url($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $url = trim((string) ($options->icpBeianUrl ?? ''));
+
+    if ($url !== '' && preg_match('#^https?://#i', $url)) {
+        return $url;
+    }
+
+    return 'https://beian.miit.gov.cn/';
+}
+
+function slowcloud_public_security_beian($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return trim((string) ($options->publicSecurityBeian ?? ''));
+}
+
+function slowcloud_public_security_beian_url($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $url = trim((string) ($options->publicSecurityBeianUrl ?? ''));
+
+    if ($url !== '' && preg_match('#^https?://#i', $url)) {
+        return $url;
+    }
+
+    return 'https://beian.mps.gov.cn/#/query/webSearch';
 }
