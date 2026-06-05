@@ -35,12 +35,16 @@
 
         <nav class="slowcloud-post-nav" aria-label="<?php _e('文章导航'); ?>">
             <div class="slowcloud-nav-card">
-                <span class="slowcloud-nav-label"><?php _e('上一篇'); ?></span>
-                <div class="slowcloud-nav-link"><?php $this->thePrev('%s', _t('没有了')); ?></div>
+                <div class="slowcloud-nav-link slowcloud-nav-link-prev">
+                    <span class="slowcloud-nav-text"><?php _e('上一篇'); ?>:</span>
+                    <span class="slowcloud-nav-title"><?php $this->thePrev('%s', _t('没有了')); ?></span>
+                </div>
             </div>
             <div class="slowcloud-nav-card">
-                <span class="slowcloud-nav-label"><?php _e('下一篇'); ?></span>
-                <div class="slowcloud-nav-link"><?php $this->theNext('%s', _t('没有了')); ?></div>
+                <div class="slowcloud-nav-link slowcloud-nav-link-next">
+                    <span class="slowcloud-nav-text"><?php _e('下一篇'); ?>:</span>
+                    <span class="slowcloud-nav-title"><?php $this->theNext('%s', _t('没有了')); ?></span>
+                </div>
             </div>
         </nav>
 

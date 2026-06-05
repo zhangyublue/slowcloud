@@ -16,17 +16,20 @@
     <?php if ($this->allow('comment')): ?>
         <div id="<?php $this->respondId(); ?>" class="slowcloud-comment-respond">
             <div class="slowcloud-cancel-reply"><?php $comments->cancelReply(); ?></div>
-            <h2><?php _e('写下你的想法'); ?></h2>
-
-            <form method="post" action="<?php $this->commentUrl(); ?>" id="slowcloud-comment-form" class="slowcloud-comment-form" role="form">
+            <div class="slowcloud-comment-respond-head">
+                <h2><?php _e('写下你的想法'); ?></h2>
                 <?php if ($this->user->hasLogin()): ?>
                     <p class="slowcloud-login-hint">
                         <?php _e('当前登录'); ?>:
                         <a href="<?php $this->options->profileUrl(); ?>"><?php $this->user->screenName(); ?></a>
-                        ·
+                        <span aria-hidden="true">·</span>
                         <a href="<?php $this->options->logoutUrl(); ?>"><?php _e('退出'); ?></a>
                     </p>
-                <?php else: ?>
+                <?php endif; ?>
+            </div>
+
+            <form method="post" action="<?php $this->commentUrl(); ?>" id="slowcloud-comment-form" class="slowcloud-comment-form" role="form">
+                <?php if (!$this->user->hasLogin()): ?>
                     <div class="slowcloud-form-grid">
                         <p>
                             <label for="author"><?php _e('称呼'); ?></label>
@@ -43,12 +46,12 @@
                     </div>
                 <?php endif; ?>
 
-                <p>
+                <p class="slowcloud-comment-field">
                     <label for="textarea"><?php _e('内容'); ?></label>
-                    <textarea rows="6" name="text" id="textarea" required><?php $this->remember('text'); ?></textarea>
+                    <textarea rows="5" name="text" id="textarea" placeholder="<?php _e('写点什么吧…'); ?>" required><?php $this->remember('text'); ?></textarea>
                 </p>
 
-                <p>
+                <p class="slowcloud-comment-submit">
                     <button type="submit"><?php _e('提交评论'); ?></button>
                 </p>
             </form>

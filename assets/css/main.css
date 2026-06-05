@@ -510,7 +510,7 @@ img {
 .slowcloud-empty-card,
 .slowcloud-comment-card {
     border-radius: var(--slowcloud-radius-sm);
-    padding: 15px 20px;
+    padding: 14px 18px;
     overflow: hidden;
 }
 
@@ -560,7 +560,7 @@ img {
 }
 
 .slowcloud-article-detail .slowcloud-article-title {
-    font-size: clamp(1.7rem, 2.4vw, 2.5rem);
+    font-size: clamp(1.55rem, 2.15vw, 2.2rem);
     line-height: 1.15;
 }
 
@@ -776,7 +776,7 @@ img {
 
 .slowcloud-article-poster-link {
     display: block;
-    margin: -30px -30px 20px;
+    margin: -15px -20px 20px;
 }
 
 .slowcloud-article-poster {
@@ -886,20 +886,55 @@ img {
 
 .slowcloud-post-nav {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 12px;
+    margin: 18px 0 22px;
 }
 
 .slowcloud-nav-card {
-    border-radius: var(--slowcloud-radius-md);
-    padding: 18px 20px;
+    display: flex;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
-.slowcloud-nav-label {
-    display: block;
-    margin-bottom: 8px;
+.slowcloud-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+    font-size: 0.84rem;
+    line-height: 1.4;
     color: var(--slowcloud-muted);
-    font-size: 0.9rem;
+}
+
+.slowcloud-nav-text {
+    font-size: 0.74rem;
+    color: var(--slowcloud-muted);
+    flex-shrink: 0;
+}
+
+.slowcloud-nav-link-prev {
+    justify-content: flex-start;
+}
+
+.slowcloud-nav-link-next {
+    justify-content: flex-start;
+}
+
+.slowcloud-nav-title {
+    min-width: 0;
+}
+
+.slowcloud-nav-title a {
+    color: var(--slowcloud-accent-deep);
+}
+
+.slowcloud-nav-title a:hover {
+    color: var(--slowcloud-text);
 }
 
 .slowcloud-sidebar-column {
@@ -1057,7 +1092,7 @@ img {
 .slowcloud-search-form,
 .slowcloud-comment-form {
     display: grid;
-    gap: 16px;
+    gap: 12px;
 }
 
 .slowcloud-search-form {
@@ -1088,9 +1123,14 @@ img {
     transition: background var(--slowcloud-motion-fast), border-color var(--slowcloud-motion-fast), color var(--slowcloud-motion-fast);
 }
 
+.slowcloud-comment-form textarea {
+    min-height: 180px;
+    resize: vertical;
+}
+
 .slowcloud-search-form button,
 .slowcloud-comment-form button {
-    padding: 14px 18px;
+    padding: 12px 18px;
     border: 0;
     border-radius: 999px;
     background: linear-gradient(135deg, var(--slowcloud-accent) 0%, var(--slowcloud-accent-deep) 100%);
@@ -1104,9 +1144,54 @@ img {
     gap: 14px;
 }
 
+.slowcloud-comment-respond-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
 .slowcloud-comment-head h2,
 .slowcloud-comment-respond h2 {
-    margin: 0 0 18px;
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.3;
+}
+
+.slowcloud-login-hint {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--slowcloud-muted);
+}
+
+.slowcloud-login-hint a {
+    color: inherit;
+}
+
+.slowcloud-login-hint a:hover {
+    color: var(--slowcloud-accent-deep);
+}
+
+.slowcloud-login-hint span {
+    margin: 0 4px;
+}
+
+.slowcloud-comment-form p {
+    margin: 0;
+}
+
+.slowcloud-comment-field label {
+    display: inline-block;
+    margin-bottom: 6px;
+}
+
+.slowcloud-comment-submit {
+    margin-top: 2px;
+}
+
+.slowcloud-comment-submit button {
+    min-width: 138px;
 }
 
 .slowcloud-comment-list {
