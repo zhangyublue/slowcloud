@@ -1235,6 +1235,47 @@ function slowcloud_stats_visitor_id(): string
     return $visitorId;
 }
 
+function slowcloud_capture_stats_context($archive): array
+{
+    $request = is_object($archive) && isset($archive->request)
+        ? $archive->request
+        : \Widget\Options::alloc()->request;
+
+    return [
+        'request' => $request,
+        'is_feed' => is_object($archive) && method_exists($archive, 'is') ? (bool) $archive->is('feed') : false,
+        'archive_type' => is_object($archive) && method_exists($archive, 'getArchiveType')
+            ? (string) ($archive->getArchiveType() ?? '')
+            : '',
+        'archive_slug' => is_object($archive) && method_exists($archive, 'getArchiveSlug')
+            ? (string) ($archive->getArchiveSlug() ?? '')
+            : '',
+        'archive_url' => is_object($archive) && method_exists($archive, 'getArchiveUrl')
+            ? trim((string) ($archive->getArchiveUrl() ?? ''))
+            : '',
+        'theme_file' => is_object($archive) && method_exists($archive, 'getThemeFile')
+            ? (string) ($archive->getThemeFile() ?? '')
+            : '',
+        'hidden' => is_object($archive) && isset($archive->hidden) ? (bool) $archive->hidden : false,
+        'cid' => is_object($archive) && isset($archive->cid) ? (int) $archive->cid : 0,
+        'status' => is_object($archive) && isset($archive->status) ? (string) $archive->status : '',
+    ];
+}
+
+function slowcloud_set_stats_context($archive): void
+{
+    $GLOBALS['slowcloud_stats_context'] = slowcloud_capture_stats_context($archive);
+}
+
+function slowcloud_get_stats_context($archive = null): array
+{
+    if (isset($GLOBALS['slowcloud_stats_context']) && is_array($GLOBALS['slowcloud_stats_context'])) {
+        return $GLOBALS['slowcloud_stats_context'];
+    }
+
+    return slowcloud_capture_stats_context($archive);
+}
+
 function slowcloud_is_excluded_stats_path(string $path): bool
 {
     $path = trim(strtolower($path));
@@ -1260,18 +1301,20 @@ function slowcloud_is_excluded_stats_path(string $path): bool
 
 function slowcloud_is_valid_front_page($archive): bool
 {
-    if (!is_object($archive) || !method_exists($archive, 'is')) {
+    $context = is_array($archive) ? $archive : slowcloud_capture_stats_context($archive);
+
+    if ($context === []) {
         return false;
     }
 
-    if ($archive->is('feed')) {
+    if (!empty($context['is_feed'])) {
         return false;
     }
 
-    $archiveType = method_exists($archive, 'getArchiveType') ? (string) ($archive->getArchiveType() ?? '') : '';
-    $archiveSlug = method_exists($archive, 'getArchiveSlug') ? (string) ($archive->getArchiveSlug() ?? '') : '';
-    $archiveUrl = method_exists($archive, 'getArchiveUrl') ? trim((string) ($archive->getArchiveUrl() ?? '')) : '';
-    $themeFile = method_exists($archive, 'getThemeFile') ? (string) ($archive->getThemeFile() ?? '') : '';
+    $archiveType = (string) ($context['archive_type'] ?? '');
+    $archiveSlug = (string) ($context['archive_slug'] ?? '');
+    $archiveUrl = trim((string) ($context['archive_url'] ?? ''));
+    $themeFile = (string) ($context['theme_file'] ?? '');
 
     if ($themeFile === '404.php' || $archiveSlug === '404') {
         return false;
@@ -1285,13 +1328,13 @@ function slowcloud_is_valid_front_page($archive): bool
         return false;
     }
 
-    if (isset($archive->hidden) && (bool) $archive->hidden) {
+    if (!empty($context['hidden'])) {
         return false;
     }
 
     if (in_array($archiveType, ['post', 'page'], true)) {
-        $cid = isset($archive->cid) ? (int) $archive->cid : 0;
-        $status = isset($archive->status) ? (string) $archive->status : '';
+        $cid = (int) ($context['cid'] ?? 0);
+        $status = (string) ($context['status'] ?? '');
 
         if ($cid <= 0 || ($status !== '' && $status !== 'publish')) {
             return false;
@@ -1303,7 +1346,8 @@ function slowcloud_is_valid_front_page($archive): bool
 
 function slowcloud_should_track_request($archive): bool
 {
-    $request = $archive->request ?? \Widget\Options::alloc()->request;
+    $context = is_array($archive) ? $archive : slowcloud_capture_stats_context($archive);
+    $request = $context['request'] ?? \Widget\Options::alloc()->request;
     $user = \Widget\User::alloc();
 
     if (php_sapi_name() === 'cli') {
@@ -1339,61 +1383,16 @@ function slowcloud_should_track_request($archive): bool
         }
     }
 
-    return slowcloud_is_valid_front_page($archive);
+    return slowcloud_is_valid_front_page($context);
 }
 
 function slowcloud_stats_page_type($archive): string
 {
-    if (is_object($archive) && method_exists($archive, 'getArchiveType')) {
-        $archiveType = trim((string) ($archive->getArchiveType() ?? ''));
+    $context = is_array($archive) ? $archive : slowcloud_capture_stats_context($archive);
+    $archiveType = trim((string) ($context['archive_type'] ?? ''));
 
-        if ($archiveType !== '') {
-            return $archiveType;
-        }
-    }
-
-    if ($archive->is('front')) {
-        return 'front';
-    }
-
-    if ($archive->is('post')) {
-        return 'post';
-    }
-
-    if ($archive->is('page')) {
-        return 'page';
-    }
-
-    if ($archive->is('index')) {
-        return 'index';
-    }
-
-    if ($archive->is('category')) {
-        return 'category';
-    }
-
-    if ($archive->is('tag')) {
-        return 'tag';
-    }
-
-    if ($archive->is('search')) {
-        return 'search';
-    }
-
-    if ($archive->is('author')) {
-        return 'author';
-    }
-
-    if ($archive->is('date')) {
-        return 'date';
-    }
-
-    if ($archive->is('archive')) {
-        return 'archive';
-    }
-
-    if ($archive->is('404')) {
-        return '404';
+    if ($archiveType !== '') {
+        return $archiveType;
     }
 
     return 'other';
@@ -1429,19 +1428,21 @@ function slowcloud_update_daily_stats(string $statDate, int $time, bool $increas
 function slowcloud_track_site_visit($archive): void
 {
     try {
-        if (!slowcloud_should_track_request($archive)) {
+        $context = is_array($archive) ? $archive : slowcloud_get_stats_context($archive);
+
+        if (!slowcloud_should_track_request($context)) {
             return;
         }
 
         slowcloud_ensure_stats_storage();
 
         $db = \Typecho\Db::get();
-        $request = $archive->request ?? \Widget\Options::alloc()->request;
+        $request = $context['request'] ?? \Widget\Options::alloc()->request;
         $time = \Typecho\Date::time();
         $statDate = (new \Typecho\Date($time))->format('Y-m-d');
         $visitorId = slowcloud_stats_visitor_id();
         $path = substr((string) $request->getRequestUrl(), 0, 255);
-        $pageType = slowcloud_stats_page_type($archive);
+        $pageType = slowcloud_stats_page_type($context);
         $ip = substr((string) $request->getIp(), 0, 64);
         $ipHash = sha1($ip);
         $userAgent = substr((string) $request->getServer('HTTP_USER_AGENT', ''), 0, 511);
