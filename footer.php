@@ -24,6 +24,7 @@ $slowcloudPublicSecurityBeianUrl = slowcloud_public_security_beian_url($this);
     </footer>
 </div>
 
+<?php slowcloud_track_site_visit($this); ?>
 <script src="<?php $this->options->themeUrl('assets/js/main.js'); ?>"></script>
 <?php $this->footer(); ?>
 </body>

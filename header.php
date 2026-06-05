@@ -6,7 +6,6 @@
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
 <?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
-<?php slowcloud_track_site_visit($this); ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
