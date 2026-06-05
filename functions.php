@@ -1235,6 +1235,72 @@ function slowcloud_stats_visitor_id(): string
     return $visitorId;
 }
 
+function slowcloud_is_excluded_stats_path(string $path): bool
+{
+    $path = trim(strtolower($path));
+
+    if ($path === '') {
+        return false;
+    }
+
+    foreach ([
+        '/action/',
+        '/admin/',
+        '/install/',
+        '/var/',
+        '/usr/',
+    ] as $prefix) {
+        if (strpos($path, $prefix) === 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function slowcloud_is_valid_front_page($archive): bool
+{
+    if (!is_object($archive) || !method_exists($archive, 'is')) {
+        return false;
+    }
+
+    if ($archive->is('feed')) {
+        return false;
+    }
+
+    $archiveType = method_exists($archive, 'getArchiveType') ? (string) ($archive->getArchiveType() ?? '') : '';
+    $archiveSlug = method_exists($archive, 'getArchiveSlug') ? (string) ($archive->getArchiveSlug() ?? '') : '';
+    $archiveUrl = method_exists($archive, 'getArchiveUrl') ? trim((string) ($archive->getArchiveUrl() ?? '')) : '';
+    $themeFile = method_exists($archive, 'getThemeFile') ? (string) ($archive->getThemeFile() ?? '') : '';
+
+    if ($themeFile === '404.php' || $archiveSlug === '404') {
+        return false;
+    }
+
+    if ($archiveType === '' || $archiveUrl === '' || $themeFile === '') {
+        return false;
+    }
+
+    if ($archiveType === 'attachment') {
+        return false;
+    }
+
+    if (isset($archive->hidden) && (bool) $archive->hidden) {
+        return false;
+    }
+
+    if (in_array($archiveType, ['post', 'page'], true)) {
+        $cid = isset($archive->cid) ? (int) $archive->cid : 0;
+        $status = isset($archive->status) ? (string) $archive->status : '';
+
+        if ($cid <= 0 || ($status !== '' && $status !== 'publish')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function slowcloud_should_track_request($archive): bool
 {
     $request = $archive->request ?? \Widget\Options::alloc()->request;
@@ -1253,6 +1319,19 @@ function slowcloud_should_track_request($archive): bool
         return false;
     }
 
+    if (method_exists($request, 'isAjax') && $request->isAjax()) {
+        return false;
+    }
+
+    if (method_exists($request, 'isJson') && $request->isJson()) {
+        return false;
+    }
+
+    $path = (string) ($request->getPathInfo() ?? '');
+    if (slowcloud_is_excluded_stats_path($path)) {
+        return false;
+    }
+
     $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
     foreach (['bot', 'spider', 'crawler', 'curl', 'wget', 'python-requests'] as $needle) {
         if ($userAgent !== '' && strpos($userAgent, $needle) !== false) {
@@ -1260,11 +1339,23 @@ function slowcloud_should_track_request($archive): bool
         }
     }
 
-    return true;
+    return slowcloud_is_valid_front_page($archive);
 }
 
 function slowcloud_stats_page_type($archive): string
 {
+    if (is_object($archive) && method_exists($archive, 'getArchiveType')) {
+        $archiveType = trim((string) ($archive->getArchiveType() ?? ''));
+
+        if ($archiveType !== '') {
+            return $archiveType;
+        }
+    }
+
+    if ($archive->is('front')) {
+        return 'front';
+    }
+
     if ($archive->is('post')) {
         return 'post';
     }
@@ -1291,6 +1382,10 @@ function slowcloud_stats_page_type($archive): string
 
     if ($archive->is('author')) {
         return 'author';
+    }
+
+    if ($archive->is('date')) {
+        return 'date';
     }
 
     if ($archive->is('archive')) {
