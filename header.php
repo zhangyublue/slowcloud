@@ -25,7 +25,7 @@
 
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/css/main.css'); ?>">
-    <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/iconfont/iconfont.css'); ?>">
+    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_5187700_uawbe366llc.css">
     <?php $this->header(); ?>
 </head>
 <body class="slowcloud-body" data-slowcloud-theme-mode="<?php echo htmlspecialchars($slowcloudThemeMode, ENT_QUOTES, $this->options->charset); ?>">

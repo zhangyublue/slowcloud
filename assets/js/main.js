@@ -117,4 +117,117 @@
             item.insertBefore(button, childList);
         });
     });
+
+    const emojiToggle = document.querySelector('[data-slowcloud-emoji-toggle]');
+    const emojiPanel = document.querySelector('[data-slowcloud-emoji-panel]');
+    const commentTextarea = document.querySelector('#textarea');
+
+    if (emojiToggle && emojiPanel && commentTextarea) {
+        const emojiTabs = emojiPanel.querySelectorAll('[data-slowcloud-emoji-tab]');
+        const emojiGroups = emojiPanel.querySelectorAll('[data-slowcloud-emoji-group]');
+
+        const closeEmojiPanel = () => {
+            emojiPanel.hidden = true;
+            emojiToggle.setAttribute('aria-expanded', 'false');
+        };
+
+        const switchEmojiGroup = (target) => {
+            emojiTabs.forEach((tab) => {
+                const isActive = tab.getAttribute('data-target') === target;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', String(isActive));
+            });
+
+            emojiGroups.forEach((group) => {
+                const isActive = group.getAttribute('data-slowcloud-emoji-group') === target;
+                group.classList.toggle('is-active', isActive);
+                group.hidden = !isActive;
+            });
+        };
+
+        emojiToggle.addEventListener('click', () => {
+            const isHidden = emojiPanel.hidden;
+            emojiPanel.hidden = !isHidden ? true : false;
+            emojiToggle.setAttribute('aria-expanded', String(isHidden));
+        });
+
+        emojiToggle.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+
+            event.preventDefault();
+            const isHidden = emojiPanel.hidden;
+            emojiPanel.hidden = !isHidden ? true : false;
+            emojiToggle.setAttribute('aria-expanded', String(isHidden));
+        });
+
+        emojiTabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                switchEmojiGroup(tab.getAttribute('data-target') || 'emoji');
+            });
+        });
+
+        emojiPanel.querySelectorAll('[data-slowcloud-emoji]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const emoji = button.getAttribute('data-slowcloud-emoji') || '';
+                const start = commentTextarea.selectionStart ?? commentTextarea.value.length;
+                const end = commentTextarea.selectionEnd ?? commentTextarea.value.length;
+                const current = commentTextarea.value;
+
+                commentTextarea.value = `${current.slice(0, start)}${emoji}${current.slice(end)}`;
+                commentTextarea.focus();
+
+                const nextPosition = start + emoji.length;
+                commentTextarea.setSelectionRange(nextPosition, nextPosition);
+                closeEmojiPanel();
+            });
+        });
+
+        switchEmojiGroup('emoji');
+
+        document.addEventListener('click', (event) => {
+            if (!emojiPanel.hidden && !emojiPanel.contains(event.target) && !emojiToggle.contains(event.target)) {
+                closeEmojiPanel();
+            }
+        });
+    }
+
+    const cancelReplyLink = document.querySelector('#cancel-comment-reply-link');
+    const cancelReplyHome = document.querySelector('[data-slowcloud-cancel-reply-home]');
+    const commentRespond = document.querySelector('.slowcloud-comment-respond');
+
+    if (cancelReplyLink && cancelReplyHome && commentRespond) {
+        const setReplyState = (isReplying) => {
+            commentRespond.classList.toggle('slowcloud-is-replying', isReplying);
+        };
+
+        setReplyState(false);
+
+        document.addEventListener('click', (event) => {
+            const cancelLink = event.target.closest('#cancel-comment-reply-link');
+            if (cancelLink) {
+                window.setTimeout(() => {
+                    cancelReplyHome.appendChild(cancelReplyLink);
+                    setReplyState(false);
+                }, 0);
+                return;
+            }
+
+            const replyLink = event.target.closest('.comment-reply a');
+            if (!replyLink) {
+                return;
+            }
+
+            const replyContainer = replyLink.closest('.comment-reply');
+            if (!replyContainer) {
+                return;
+            }
+
+            window.setTimeout(() => {
+                replyContainer.appendChild(cancelReplyLink);
+                setReplyState(true);
+            }, 0);
+        });
+    }
 })();

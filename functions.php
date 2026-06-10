@@ -332,7 +332,6 @@ function themeConfig($form)
         _t('ICP备案链接'),
         _t('可选，填写备案跳转地址；不填写时默认跳转到工信部备案管理系统')
     );
-    $icpBeianUrl->addRule('url', _t('请填写正确的 URL 地址'));
     $form->addInput(slowcloud_assign_settings_group($icpBeianUrl, 'site-compliance', '备案信息设置'));
 
     $publicSecurityBeian = new \Typecho\Widget\Helper\Form\Element\Text(
@@ -347,11 +346,10 @@ function themeConfig($form)
     $publicSecurityBeianUrl = new \Typecho\Widget\Helper\Form\Element\Text(
         'publicSecurityBeianUrl',
         null,
-        'https://beian.mps.gov.cn/#/query/webSearch',
+        'https://beian.mps.gov.cn/',
         _t('公安联网备案链接'),
         _t('可选，填写备案跳转地址；不填写时默认跳转到全国互联网安全管理服务平台')
     );
-    $publicSecurityBeianUrl->addRule('url', _t('请填写正确的 URL 地址'));
     $form->addInput(slowcloud_assign_settings_group($publicSecurityBeianUrl, 'site-compliance', '备案信息设置'));
 
     $form->addInput(slowcloud_theme_settings_enhancer());
@@ -359,6 +357,39 @@ function themeConfig($form)
 
 function themeConfigHandle($settings, $isInit): void
 {
+    $options = \Widget\Options::alloc();
+    $theme = (string) ($options->theme ?? 'slowcloud');
+    $db = \Typecho\Db::get();
+    $value = json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    if ($value === false) {
+        $value = json_encode([]);
+    }
+
+    $existing = $db->fetchRow(
+        $db->select('name')
+            ->from('table.options')
+            ->where('name = ?', 'theme:' . $theme)
+            ->where('user = ?', 0)
+            ->limit(1)
+    );
+
+    if ($existing) {
+        $db->query(
+            $db->update('table.options')
+                ->rows(['value' => $value])
+                ->where('name = ?', 'theme:' . $theme)
+                ->where('user = ?', 0)
+        );
+    } else {
+        $db->query(
+            $db->insert('table.options')->rows([
+                'name'  => 'theme:' . $theme,
+                'user'  => 0,
+                'value' => $value,
+            ])
+        );
+    }
 }
 
 function postMeta(\Widget\Archive $archive, string $metaType = 'archive')
@@ -621,6 +652,114 @@ function slowcloud_author_avatar($archive): string
     }
 
     return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/avatar.jpg', $archive);
+}
+
+function slowcloud_comment_default_avatar($archive): string
+{
+    return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/avatar.jpg', $archive);
+}
+
+function slowcloud_comment_avatar_url($comment, int $size = 32, ?string $default = null, ?string $rating = null): string
+{
+    $mail = strtolower(trim((string) ($comment->mail ?? '')));
+    $hash = $mail !== '' ? md5($mail) : '';
+    $params = ['s' => $size];
+
+    if ($rating !== null && $rating !== '') {
+        $params['r'] = $rating;
+    }
+
+    $params['d'] = $default ?: slowcloud_comment_default_avatar($comment);
+
+    return 'https://cravatar.cn/avatar/' . $hash . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+}
+
+function slowcloud_comment_avatar_srcset($comment, int $size = 32, ?string $default = null, ?string $rating = null): string
+{
+    return implode(', ', [
+        slowcloud_comment_avatar_url($comment, $size * 2, $default, $rating) . ' 2x',
+        slowcloud_comment_avatar_url($comment, $size * 3, $default, $rating) . ' 3x',
+    ]);
+}
+
+function threadedComments($comments, $singleCommentOptions): void
+{
+    $commentClass = '';
+    if ($comments->authorId) {
+        if ($comments->authorId == $comments->ownerId) {
+            $commentClass .= ' comment-by-author';
+        } else {
+            $commentClass .= ' comment-by-user';
+        }
+    }
+
+    $avatarSize = (int) ($singleCommentOptions->avatarSize ?? 32);
+    $defaultAvatar = $singleCommentOptions->defaultAvatar ?? slowcloud_comment_default_avatar($comments);
+    $rating = $comments->options->commentsAvatarRating ?? 'G';
+    $avatarUrl = slowcloud_comment_avatar_url($comments, $avatarSize, $defaultAvatar, $rating);
+    $avatarSrcset = !empty($singleCommentOptions->avatarHighRes)
+        ? slowcloud_comment_avatar_srcset($comments, $avatarSize, $defaultAvatar, $rating)
+        : '';
+    $charset = $comments->options->charset ?? 'UTF-8';
+    ?>
+    <li itemscope itemtype="http://schema.org/UserComments" id="<?php $comments->theId(); ?>" class="comment-body<?php
+    if ($comments->levels > 0) {
+        echo ' comment-child';
+        $comments->levelsAlt(' comment-level-odd', ' comment-level-even');
+    } else {
+        echo ' comment-parent';
+    }
+    $comments->alt(' comment-odd', ' comment-even');
+    echo $commentClass;
+    ?>">
+        <div class="comment-author" itemprop="creator" itemscope itemtype="http://schema.org/Person">
+            <span itemprop="image">
+                <img
+                    class="avatar"
+                    loading="lazy"
+                    src="<?php echo htmlspecialchars($avatarUrl, ENT_QUOTES, $charset); ?>"
+                    <?php if ($avatarSrcset !== ''): ?>srcset="<?php echo htmlspecialchars($avatarSrcset, ENT_QUOTES, $charset); ?>"<?php endif; ?>
+                    alt="<?php echo htmlspecialchars((string) $comments->author, ENT_QUOTES, $charset); ?>"
+                    width="<?php echo $avatarSize; ?>"
+                    height="<?php echo $avatarSize; ?>"
+                />
+            </span>
+            <div class="slowcloud-comment-main">
+                <div class="slowcloud-comment-author-main">
+                    <cite class="fn" itemprop="name"><?php $singleCommentOptions->beforeAuthor();
+                        $comments->author();
+                        $singleCommentOptions->afterAuthor(); ?></cite>
+                    <?php if ($comments->authorId && $comments->authorId == $comments->ownerId): ?>
+                        <span class="slowcloud-comment-author-badge"><?php _e('作者'); ?></span>
+                    <?php endif; ?>
+                    <div class="comment-meta">
+                        <a href="<?php $comments->permalink(); ?>">
+                            <time itemprop="commentTime" datetime="<?php $comments->date('c'); ?>"><?php
+                                $singleCommentOptions->beforeDate();
+                                $comments->date($singleCommentOptions->dateFormat);
+                                $singleCommentOptions->afterDate();
+                            ?></time>
+                        </a>
+                        <?php if ('approved' !== $comments->status) { ?>
+                            <em class="comment-awaiting-moderation"><?php $singleCommentOptions->commentStatus(); ?></em>
+                        <?php } ?>
+                    </div>
+                </div>
+                <div class="comment-content" itemprop="commentText">
+                    <?php $comments->content(); ?>
+                </div>
+                <div class="comment-reply">
+                    <?php $comments->reply($singleCommentOptions->replyWord); ?>
+                </div>
+                <?php if ($comments->children) { ?>
+                    <div class="comment-children" itemprop="discusses">
+                        <?php $comments->threadedComments(); ?>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+    </li>
+    <?php
 }
 
 function slowcloud_author_name($archive): string
@@ -1640,5 +1779,5 @@ function slowcloud_public_security_beian_url($archive): string
         return $url;
     }
 
-    return 'https://beian.mps.gov.cn/#/query/webSearch';
+    return 'https://beian.mps.gov.cn/';
 }
