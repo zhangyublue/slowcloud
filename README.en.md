@@ -103,3 +103,15 @@ slowcloud/
 
 - To use the timeline, create a standalone page and select the `Timeline Page` template.
 - To view PV, UV, IP, and recent visit records in the admin area, enable the `SlowcloudStatistics` plugin and open the `Slowcloud Statistics` panel.
+
+## Acknowledgements
+
+Slowcloud was inspired by the implementation ideas and design details of these excellent Typecho themes:
+
+- [Joe](https://github.com/HaoOuBa/Joe)
+- [Kratos](https://github.com/chengzhi233/Kratos)
+- [Handsome](https://www.ihewro.com/archives/489/)
+
+## License
+
+Slowcloud is released under the [MIT License](LICENSE).

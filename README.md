@@ -102,3 +102,15 @@ slowcloud/
 
 - 如果需要使用时光轴，请新建独立页面并选择 `时光轴页面` 模板。
 - 如果需要在后台查看 PV、UV、IP 和最近访问记录，请启用 `SlowcloudStatistics` 插件，启用后可在后台的 `Slowcloud 统计` 面板查看。
+
+## 致谢
+
+Slowcloud 在实现和设计过程中参考了以下优秀 Typecho 主题，感谢这些项目提供的思路与启发：
+
+- [Joe](https://github.com/HaoOuBa/Joe)
+- [Kratos](https://github.com/chengzhi233/Kratos)
+- [Handsome](https://www.ihewro.com/archives/489/)
+
+## 开源协议
+
+Slowcloud 使用 [MIT License](LICENSE) 开源。
