@@ -8,6 +8,13 @@ Slowcloud 是一个为 Typecho 编写的轻量博客主题，视觉上偏安静�
 
 示例站点：[https://slowcloud.cn](https://slowcloud.cn)
 
+## 环境要求
+
+- 基于 Typecho `1.3.0` 开发和测试。
+- 建议使用 PHP `8.0` 或更高版本，最低请使用 PHP `7.4` 或更高版本。
+- 请确保 Typecho 所需 PHP 扩展可用，包括 `mbstring`、`json`、`Reflection`，以及至少一种数据库扩展，例如 `mysqli`、`sqlite3`、`pgsql` 或对应的 PDO 扩展。
+- 如果使用较旧的 Typecho 或 PHP 版本，可能需要自行适配主题设置、后台编辑器增强和现代 PHP 类型声明。
+
 ## 功能特性
 
 - 首页、归档、搜索、文章详情、独立页面、404 页面和时光轴页面模板。
