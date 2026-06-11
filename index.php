@@ -4,7 +4,7 @@
  *
  * @package Slowcloud
  * @author 章鱼
- * @version 0.1.0
+ * @version 1.0.0
  * @link https://slowcloud.cn
  */
 

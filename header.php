@@ -6,6 +6,9 @@
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
 <?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
+<?php $slowcloudPrismBaseUrl = rtrim((string) $this->options->themeUrl('assets/typecho/prism', 'slowcloud'), '/') . '/'; ?>
+<?php $slowcloudContentRenderVersion = @filemtime(__DIR__ . '/assets/css/content-render.css') ?: time(); ?>
+<?php $slowcloudCodeHighlightVersion = @filemtime(__DIR__ . '/assets/css/code-highlight.css') ?: time(); ?>
 <?php slowcloud_set_stats_context($this); ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -25,7 +28,12 @@
 
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/css/main.css'); ?>">
-    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_5187700_uawbe366llc.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($this->options->themeUrl('assets/css/content-render.css', 'slowcloud') . '?v=' . $slowcloudContentRenderVersion, ENT_QUOTES, $this->options->charset); ?>">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'plugins/line-numbers/prism-line-numbers.css', ENT_QUOTES, $this->options->charset); ?>">
+    <link id="slowcloud-prism-theme-coy" rel="stylesheet" href="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'themes/prism-coy.css', ENT_QUOTES, $this->options->charset); ?>">
+    <link id="slowcloud-prism-theme-okaidia" rel="stylesheet" href="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'themes/prism-okaidia.css', ENT_QUOTES, $this->options->charset); ?>">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($this->options->themeUrl('assets/css/code-highlight.css', 'slowcloud') . '?v=' . $slowcloudCodeHighlightVersion, ENT_QUOTES, $this->options->charset); ?>">
+    <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/iconfont/iconfont.css'); ?>">
     <?php $this->header(); ?>
 </head>
 <body class="slowcloud-body" data-slowcloud-theme-mode="<?php echo htmlspecialchars($slowcloudThemeMode, ENT_QUOTES, $this->options->charset); ?>">

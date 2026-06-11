@@ -128,6 +128,254 @@ function slowcloud_theme_asset_url(string $path, $archive = null): string
     return \Typecho\Common::url(ltrim($path, '/'), (string) ($options->siteUrl ?? ''));
 }
 
+function slowcloud_theme_asset_cdn_url(string $path, $archive = null): string
+{
+    return slowcloud_rewrite_cdn_url($archive, slowcloud_theme_asset_url($path, $archive));
+}
+
+function slowcloud_owo_config(): array
+{
+    static $config = null;
+
+    if (is_array($config)) {
+        return $config;
+    }
+
+    $config = [];
+    $file = __DIR__ . '/assets/json/slowcloud.owo.json';
+
+    if (!is_file($file)) {
+        return $config;
+    }
+
+    $data = json_decode((string) file_get_contents($file), true);
+    if (!is_array($data)) {
+        return $config;
+    }
+
+    $groups = [
+        '泡泡' => 'paopao',
+        '阿鲁' => 'aru',
+        '颜文字' => 'kaomoji',
+    ];
+
+    foreach ($groups as $label => $key) {
+        if (empty($data[$label]) || !is_array($data[$label])) {
+            continue;
+        }
+
+        $items = [];
+        foreach ($data[$label] as $item) {
+            if (!is_array($item) || !isset($item['data'])) {
+                continue;
+            }
+
+            $value = (string) $item['data'];
+            $icon = isset($item['icon']) ? (string) $item['icon'] : '';
+            $name = isset($item['text']) ? (string) $item['text'] : $value;
+
+            if (preg_match('/^:sc[pa]\((.*)\)$/u', $value, $matches)) {
+                $name = $matches[1];
+            }
+
+            $items[] = [
+                'name' => $name,
+                'value' => $value,
+                'icon' => $icon,
+                'image' => $icon !== '' && preg_match('/^assets\/owo\//', $icon) === 1,
+            ];
+        }
+
+        if ($items) {
+            $config[$key] = [
+                'label' => $label,
+                'items' => $items,
+            ];
+        }
+    }
+
+    return $config;
+}
+
+function slowcloud_comment_emoji_groups($archive = null): array
+{
+    $groups = [];
+
+    $owoGroups = slowcloud_owo_config();
+
+    foreach (['paopao', 'aru'] as $key) {
+        if (empty($owoGroups[$key]['items'])) {
+            continue;
+        }
+
+        $groups[$key] = $owoGroups[$key];
+        foreach ($groups[$key]['items'] as &$item) {
+            if (!empty($item['image'])) {
+                $item['url'] = slowcloud_theme_asset_cdn_url('usr/themes/slowcloud/' . ltrim((string) $item['icon'], '/'), $archive);
+            }
+        }
+        unset($item);
+    }
+
+    $kaomojiItems = $owoGroups['kaomoji']['items'] ?? [];
+    if (!$kaomojiItems) {
+        $kaomojiItems = array_map(static function (string $kaomoji): array {
+            return [
+                'name' => $kaomoji,
+                'value' => $kaomoji,
+                'icon' => '',
+                'image' => false,
+            ];
+        }, ['|´・ω・)ノ', 'ヾ(≧▽≦*)o', '(*/ω＼*)', '(๑•̀ㅂ•́)و✧', '(╯°□°）╯︵ ┻━┻', 'φ(゜▽゜*)♪', '(～￣▽￣)～', 'Σ(っ °Д °;)っ', 'QAQ', '( •̀ ω •́ )✧', '(❁´◡`❁)', '(っ °Д °;)っ']);
+    }
+
+    $groups['kaomoji'] = [
+        'label' => '颜文字',
+        'items' => $kaomojiItems,
+    ];
+
+    $groups['emoji'] = [
+        'label' => 'emoji',
+        'items' => array_map(static function (string $emoji): array {
+            return [
+                'name' => $emoji,
+                'value' => $emoji,
+                'icon' => '',
+                'image' => false,
+            ];
+        }, ['😀', '😆', '🥹', '😂', '🥰', '🤔', '😌', '😴', '🙌', '✨', '☁️', '🌙', '🍵', '🌿', '🎈', '💭']),
+    ];
+
+    return $groups;
+}
+
+function slowcloud_replace_owo_shortcodes($archive, string $html): string
+{
+    if ($html === '' || (strpos($html, ':scp(') === false && strpos($html, ':sca(') === false)) {
+        return $html;
+    }
+
+    $config = slowcloud_owo_config();
+    $pairs = [
+        'paopao' => '\:scp',
+        'aru' => '\:sca',
+    ];
+
+    foreach ($pairs as $key => $prefix) {
+        if (empty($config[$key]['items'])) {
+            continue;
+        }
+
+        $map = [];
+        foreach ($config[$key]['items'] as $item) {
+            if (empty($item['image']) || empty($item['icon'])) {
+                continue;
+            }
+
+            $map[(string) $item['name']] = [
+                'url' => slowcloud_theme_asset_cdn_url('usr/themes/slowcloud/' . ltrim((string) $item['icon'], '/'), $archive),
+                'alt' => (string) $item['name'],
+            ];
+        }
+
+        if (!$map) {
+            continue;
+        }
+
+        $pattern = '/' . $prefix . '\(\s*(' . implode('|', array_map(static function (string $name): string {
+            return preg_quote($name, '/');
+        }, array_keys($map))) . ')\s*\)/u';
+
+        $html = (string) preg_replace_callback($pattern, static function (array $matches) use ($map): string {
+            $item = $map[$matches[1]] ?? null;
+            if (!$item) {
+                return $matches[0];
+            }
+
+            return '<img class="slowcloud-owo-image owo_image" src="'
+                . htmlspecialchars($item['url'], ENT_QUOTES, 'UTF-8')
+                . '" alt="'
+                . htmlspecialchars($item['alt'], ENT_QUOTES, 'UTF-8')
+                . '" loading="lazy">';
+        }, $html);
+    }
+
+    return $html;
+}
+
+function slowcloud_register_admin_editor_enhance(): void
+{
+    static $registered = false;
+
+    if ($registered || !defined('__TYPECHO_ADMIN__')) {
+        return;
+    }
+
+    $registered = true;
+
+    \Typecho\Plugin::factory('admin/editor-js.php')->markdownEditor = 'slowcloud_render_admin_editor_enhance';
+}
+
+function slowcloud_force_admin_markdown_editor(): void
+{
+    if (!defined('__TYPECHO_ADMIN__')) {
+        return;
+    }
+
+    $options = \Widget\Options::alloc();
+    $options->markdown = true;
+    slowcloud_register_admin_editor_enhance();
+}
+
+function slowcloud_render_admin_editor_enhance($content): void
+{
+    $options = \Widget\Options::alloc();
+    $cssUrl = $options->themeUrl('assets/typecho/editor-enhance.css', 'slowcloud');
+    $cssFile = $options->themeFile('slowcloud', 'assets/typecho/editor-enhance.css');
+    $contentCssUrl = $options->themeUrl('assets/css/content-render.css', 'slowcloud');
+    $contentCssFile = $options->themeFile('slowcloud', 'assets/css/content-render.css');
+    $codeCssUrl = $options->themeUrl('assets/css/code-highlight.css', 'slowcloud');
+    $codeCssFile = $options->themeFile('slowcloud', 'assets/css/code-highlight.css');
+    $scriptFile = $options->themeFile('slowcloud', 'assets/typecho/editor-enhance.js');
+    $prismBaseUrl = rtrim((string) $options->themeUrl('assets/typecho/prism', 'slowcloud'), '/') . '/';
+    $themeMode = (string) ($options->themeMode ?? 'system');
+    ?>
+	    (function () {
+		        [
+		            <?php echo json_encode($contentCssUrl . '?v=' . (is_file($contentCssFile) ? filemtime($contentCssFile) : time()), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+		            <?php echo json_encode($codeCssUrl . '?v=' . (is_file($codeCssFile) ? filemtime($codeCssFile) : time()), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+		            <?php echo json_encode($cssUrl . '?v=' . (is_file($cssFile) ? filemtime($cssFile) : time()), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+		        ].forEach(function (href) {
+	            var link = document.createElement('link');
+	            link.rel = 'stylesheet';
+	            link.href = href;
+	            document.head.appendChild(link);
+	        });
+	    })();
+    window.SlowcloudEditorEnhance = {
+        labels: {
+            heading: <?php echo json_encode(_t('标题级别'), JSON_UNESCAPED_UNICODE); ?>,
+            body: <?php echo json_encode(_t('正文'), JSON_UNESCAPED_UNICODE); ?>,
+            placeholder: <?php echo json_encode(_t('标题文字'), JSON_UNESCAPED_UNICODE); ?>
+        },
+        themeMode: <?php echo json_encode($themeMode, JSON_UNESCAPED_UNICODE); ?>,
+        prism: {
+            core: <?php echo json_encode($prismBaseUrl . 'prism.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            autoloader: <?php echo json_encode($prismBaseUrl . 'plugins/autoloader/prism-autoloader.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            components: <?php echo json_encode($prismBaseUrl . 'components/', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            lineNumbersScript: <?php echo json_encode($prismBaseUrl . 'plugins/line-numbers/prism-line-numbers.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            lineNumbersStyle: <?php echo json_encode($prismBaseUrl . 'plugins/line-numbers/prism-line-numbers.css', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            coyStyle: <?php echo json_encode($prismBaseUrl . 'themes/prism-coy.css', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            okaidiaStyle: <?php echo json_encode($prismBaseUrl . 'themes/prism-okaidia.css', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+        },
+        editor: editor
+    };
+    <?php if (is_file($scriptFile)) {
+        echo file_get_contents($scriptFile);
+    } ?>
+    <?php
+}
+
 function themeConfig($form)
 {
     $options = \Widget\Options::alloc();
@@ -311,7 +559,7 @@ function themeConfig($form)
         null,
         null,
         _t('上传图片 CDN 地址'),
-        _t('仅用于改写站内上传目录 usr/uploads 下的图片地址。填写 CDN 域名根地址，例如 https://cdn.example.com；保存后会作用于文章正文、摘要和海报图中的本地上传图片，请确保 CDN 已正确回源到站点上传目录。')
+        _t('填写 CDN 域名根地址，例如 https://cdn.example.com；保存后会改写文章正文、摘要和海报图中的 usr/uploads 图片地址，也会改写 slowcloud 主题表情图片地址，请确保 CDN 已正确回源到站点根目录。')
     );
     $uploadCdnUrl->addRule('url', _t('请填写正确的 URL 地址'));
     $form->addInput(slowcloud_assign_settings_group($uploadCdnUrl, 'content-delivery', '内容分发设置'));
@@ -432,6 +680,8 @@ function postMeta(\Widget\Archive $archive, string $metaType = 'archive')
 
 function themeFields($layout)
 {
+    slowcloud_force_admin_markdown_editor();
+
     $poster = new \Typecho\Widget\Helper\Form\Element\Text(
         'poster',
         null,
@@ -486,7 +736,7 @@ function slowcloud_join_url(string $base, string $path): string
     return rtrim($base, '/') . '/' . ltrim($path, '/');
 }
 
-function slowcloud_rewrite_upload_url($archive, string $url): string
+function slowcloud_rewrite_cdn_url($archive, string $url, ?string $requiredPrefix = null): string
 {
     $url = trim($url);
     if ($url === '') {
@@ -508,7 +758,7 @@ function slowcloud_rewrite_upload_url($archive, string $url): string
 
     if (!isset($urlParts['scheme'], $urlParts['host'])) {
         $path = $urlParts['path'] ?? '';
-        if (strpos($path, '/usr/uploads/') === 0 || strpos($path, 'usr/uploads/') === 0) {
+        if ($requiredPrefix === null || strpos(ltrim($path, '/'), ltrim($requiredPrefix, '/')) === 0) {
             return slowcloud_join_url($cdnUrl, ltrim($path, '/'))
                 . (isset($urlParts['query']) ? '?' . $urlParts['query'] : '')
                 . (isset($urlParts['fragment']) ? '#' . $urlParts['fragment'] : '');
@@ -533,17 +783,22 @@ function slowcloud_rewrite_upload_url($archive, string $url): string
 
     if ($sitePath !== '' && strpos($urlPath, $sitePath . '/') === 0) {
         $relativePath = substr($urlPath, strlen($sitePath) + 1);
-    } elseif (strpos($urlPath, '/usr/uploads/') === 0) {
+    } else {
         $relativePath = ltrim($urlPath, '/');
     }
 
-    if (strpos($relativePath, 'usr/uploads/') !== 0) {
+    if ($requiredPrefix !== null && strpos($relativePath, ltrim($requiredPrefix, '/')) !== 0) {
         return $url;
     }
 
     return slowcloud_join_url($cdnUrl, $relativePath)
         . (isset($urlParts['query']) ? '?' . $urlParts['query'] : '')
         . (isset($urlParts['fragment']) ? '#' . $urlParts['fragment'] : '');
+}
+
+function slowcloud_rewrite_upload_url($archive, string $url): string
+{
+    return slowcloud_rewrite_cdn_url($archive, $url, 'usr/uploads/');
 }
 
 function slowcloud_rewrite_upload_html($archive, string $html): string
@@ -568,14 +823,16 @@ function slowcloud_render_content($archive): void
 {
     ob_start();
     $archive->content();
-    echo slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
+    $html = slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
+    echo slowcloud_replace_owo_shortcodes($archive, $html);
 }
 
 function slowcloud_render_excerpt($archive, int $length = 180, string $suffix = '...'): void
 {
     ob_start();
     $archive->excerpt($length, $suffix);
-    echo slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
+    $html = slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
+    echo slowcloud_replace_owo_shortcodes($archive, $html);
 }
 
 function slowcloud_views($archive): int
@@ -746,7 +1003,11 @@ function threadedComments($comments, $singleCommentOptions): void
                     </div>
                 </div>
                 <div class="comment-content" itemprop="commentText">
-                    <?php $comments->content(); ?>
+                    <?php
+                    ob_start();
+                    $comments->content();
+                    echo slowcloud_replace_owo_shortcodes($comments, (string) ob_get_clean());
+                    ?>
                 </div>
                 <div class="comment-reply">
                     <?php $comments->reply($singleCommentOptions->replyWord); ?>

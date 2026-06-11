@@ -18,6 +18,7 @@
     --slowcloud-shadow: 0 20px 60px rgba(86, 111, 145, 0.15);
     --slowcloud-card-bg: var(--slowcloud-surface);
     --slowcloud-input-bg: rgba(255, 255, 255, 0.86);
+    --slowcloud-emoji-panel-bg: #ffffff;
     --slowcloud-chip-bg: rgba(122, 166, 216, 0.14);
     --slowcloud-pagination-bg: rgba(255, 255, 255, 0.78);
     --slowcloud-comment-item-bg: rgba(255, 255, 255, 0.7);
@@ -56,6 +57,7 @@
     --slowcloud-shadow: 0 24px 64px rgba(2, 6, 23, 0.45);
     --slowcloud-card-bg: rgba(15, 23, 36, 0.72);
     --slowcloud-input-bg: rgba(13, 20, 31, 0.92);
+    --slowcloud-emoji-panel-bg: #121c2b;
     --slowcloud-chip-bg: rgba(142, 189, 255, 0.14);
     --slowcloud-pagination-bg: rgba(20, 31, 48, 0.9);
     --slowcloud-comment-item-bg: rgba(18, 27, 41, 0.9);
@@ -855,21 +857,6 @@ img {
     line-height: 1;
 }
 
-.slowcloud-entry-content {
-    color: var(--slowcloud-text);
-}
-
-.slowcloud-entry-content p:first-child {
-    margin-top: 0;
-}
-
-.slowcloud-entry-content img,
-.slowcloud-entry-content pre,
-.slowcloud-entry-content blockquote,
-.slowcloud-entry-content table {
-    max-width: 100%;
-}
-
 .slowcloud-article-excerpt {
     color: var(--slowcloud-muted);
     display: -webkit-box;
@@ -1137,6 +1124,7 @@ img {
 
 .slowcloud-comment-form textarea {
     min-height: 180px;
+    padding-bottom: 48px;
     resize: vertical;
 }
 
@@ -1205,9 +1193,8 @@ img {
     margin: 0;
 }
 
-.slowcloud-comment-field label {
-    display: inline-block;
-    margin-bottom: 6px;
+.slowcloud-comment-field {
+    position: relative;
 }
 
 .slowcloud-form-grid label {
@@ -1221,7 +1208,10 @@ img {
 }
 
 .slowcloud-comment-tools {
-    position: relative;
+    position: absolute;
+    left: 14px;
+    bottom: 12px;
+    z-index: 3;
     display: inline-flex;
     margin-bottom: 0;
 }
@@ -1249,7 +1239,7 @@ img {
 
 .slowcloud-comment-emoji-panel {
     position: absolute;
-    top: calc(100% + 8px);
+    bottom: calc(100% + 8px);
     left: 0;
     z-index: 10;
     min-width: 320px;
@@ -1257,7 +1247,7 @@ img {
     padding: 0;
     border: 1px solid var(--slowcloud-line);
     border-radius: var(--slowcloud-radius-sm);
-    background: var(--slowcloud-card-bg);
+    background: var(--slowcloud-emoji-panel-bg);
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
     overflow: hidden;
 }
@@ -1310,6 +1300,11 @@ img {
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.slowcloud-owo-group[data-slowcloud-emoji-group="paopao"],
+.slowcloud-owo-group[data-slowcloud-emoji-group="aru"] {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
 .slowcloud-comment-form .slowcloud-comment-emoji-item {
     display: inline-flex;
     align-items: center;
@@ -1330,6 +1325,18 @@ img {
     border: 0;
     background: transparent;
     box-shadow: none;
+}
+
+.slowcloud-comment-form .slowcloud-comment-emoji-item-image {
+    min-height: 38px;
+    padding: 5px;
+}
+
+.slowcloud-comment-form .slowcloud-comment-emoji-item-image img {
+    display: block;
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
 }
 
 .slowcloud-comment-form .slowcloud-comment-emoji-item.slowcloud-comment-emoji-item-text {
@@ -1472,6 +1479,17 @@ img {
 .slowcloud-comment-list .comment-content > * {
     margin-top: 0;
     margin-bottom: 0;
+}
+
+.slowcloud-entry-content .slowcloud-owo-image,
+.slowcloud-comment-list .slowcloud-owo-image {
+    display: inline-block;
+    width: auto;
+    height: 1.55em;
+    max-height: 32px;
+    margin: 0 2px;
+    border-radius: 0;
+    vertical-align: -0.35em;
 }
 
 .slowcloud-comment-list .comment-reply,

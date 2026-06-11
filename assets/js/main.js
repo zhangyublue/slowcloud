@@ -37,6 +37,9 @@
     const applyTheme = (theme) => {
         root.dataset.slowcloudTheme = theme;
         applyHeaderContrast(theme === 'dark' ? 'light' : 'dark');
+        window.dispatchEvent(new CustomEvent('slowcloud-theme-change', {
+            detail: { theme }
+        }));
 
         if (!toggle) {
             return;
@@ -184,7 +187,7 @@
             });
         });
 
-        switchEmojiGroup('emoji');
+        switchEmojiGroup(emojiTabs[0]?.getAttribute('data-target') || 'emoji');
 
         document.addEventListener('click', (event) => {
             if (!emojiPanel.hidden && !emojiPanel.contains(event.target) && !emojiToggle.contains(event.target)) {

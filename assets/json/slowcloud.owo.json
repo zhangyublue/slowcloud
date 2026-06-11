@@ -1,0 +1,641 @@
+{
+    "泡泡": [
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-001.png",
+            "data": ":scp(呵呵)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-002.png",
+            "data": ":scp(哈哈)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-003.png",
+            "data": ":scp(吐舌)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-004.png",
+            "data": ":scp(太开心)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-005.png",
+            "data": ":scp(笑眼)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-006.png",
+            "data": ":scp(花心)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-007.png",
+            "data": ":scp(小乖)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-008.png",
+            "data": ":scp(乖)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-009.png",
+            "data": ":scp(捂嘴笑)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-010.png",
+            "data": ":scp(滑稽)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-011.png",
+            "data": ":scp(你懂的)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-012.png",
+            "data": ":scp(不高兴)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-013.png",
+            "data": ":scp(怒)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-014.png",
+            "data": ":scp(汗)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-015.png",
+            "data": ":scp(黑线)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-016.png",
+            "data": ":scp(泪)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-017.png",
+            "data": ":scp(真棒)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-018.png",
+            "data": ":scp(喷)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-019.png",
+            "data": ":scp(惊哭)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-020.png",
+            "data": ":scp(阴险)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-021.png",
+            "data": ":scp(鄙视)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-022.png",
+            "data": ":scp(酷)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-023.png",
+            "data": ":scp(啊)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-024.png",
+            "data": ":scp(狂汗)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-025.png",
+            "data": ":scp(what)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-026.png",
+            "data": ":scp(疑问)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-027.png",
+            "data": ":scp(酸爽)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-028.png",
+            "data": ":scp(呀咩爹)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-029.png",
+            "data": ":scp(委屈)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-030.png",
+            "data": ":scp(惊讶)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-031.png",
+            "data": ":scp(睡觉)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-032.png",
+            "data": ":scp(笑尿)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-033.png",
+            "data": ":scp(挖鼻)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-034.png",
+            "data": ":scp(吐)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-035.png",
+            "data": ":scp(犀利)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-036.png",
+            "data": ":scp(小红脸)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-037.png",
+            "data": ":scp(懒得理)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-038.png",
+            "data": ":scp(勉强)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-039.png",
+            "data": ":scp(爱心)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-040.png",
+            "data": ":scp(心碎)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-041.png",
+            "data": ":scp(玫瑰)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-042.png",
+            "data": ":scp(礼物)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-043.png",
+            "data": ":scp(彩虹)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-044.png",
+            "data": ":scp(太阳)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-045.png",
+            "data": ":scp(星星月亮)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-046.png",
+            "data": ":scp(钱币)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-047.png",
+            "data": ":scp(茶杯)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-048.png",
+            "data": ":scp(蛋糕)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-049.png",
+            "data": ":scp(大拇指)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-050.png",
+            "data": ":scp(胜利)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-051.png",
+            "data": ":scp(haha)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-052.png",
+            "data": ":scp(OK)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-053.png",
+            "data": ":scp(沙发)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-054.png",
+            "data": ":scp(手纸)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-055.png",
+            "data": ":scp(香蕉)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-056.png",
+            "data": ":scp(便便)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-057.png",
+            "data": ":scp(药丸)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-058.png",
+            "data": ":scp(红领巾)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-059.png",
+            "data": ":scp(蜡烛)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-060.png",
+            "data": ":scp(音乐)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-061.png",
+            "data": ":scp(灯泡)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-062.png",
+            "data": ":scp(开心)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-063.png",
+            "data": ":scp(钱)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-064.png",
+            "data": ":scp(咦)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-065.png",
+            "data": ":scp(呼)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-066.png",
+            "data": ":scp(冷)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-067.png",
+            "data": ":scp(生气)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-068.png",
+            "data": ":scp(弱)"
+        },
+        {
+            "icon": "assets/owo/paopao/slowcloud-paopao-069.png",
+            "data": ":scp(狗头)"
+        }
+    ],
+    "阿鲁": [
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-001.png",
+            "data": ":sca(高兴)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-002.png",
+            "data": ":sca(小怒)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-003.png",
+            "data": ":sca(脸红)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-004.png",
+            "data": ":sca(内伤)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-005.png",
+            "data": ":sca(装大款)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-006.png",
+            "data": ":sca(赞一个)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-007.png",
+            "data": ":sca(害羞)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-008.png",
+            "data": ":sca(汗)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-009.png",
+            "data": ":sca(吐血倒地)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-010.png",
+            "data": ":sca(深思)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-011.png",
+            "data": ":sca(不高兴)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-012.png",
+            "data": ":sca(无语)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-013.png",
+            "data": ":sca(亲亲)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-014.png",
+            "data": ":sca(口水)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-015.png",
+            "data": ":sca(尴尬)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-016.png",
+            "data": ":sca(中指)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-017.png",
+            "data": ":sca(想一想)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-018.png",
+            "data": ":sca(哭泣)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-019.png",
+            "data": ":sca(便便)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-020.png",
+            "data": ":sca(献花)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-021.png",
+            "data": ":sca(皱眉)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-022.png",
+            "data": ":sca(傻笑)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-023.png",
+            "data": ":sca(狂汗)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-024.png",
+            "data": ":sca(吐)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-025.png",
+            "data": ":sca(喷水)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-026.png",
+            "data": ":sca(看不见)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-027.png",
+            "data": ":sca(鼓掌)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-028.png",
+            "data": ":sca(阴暗)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-029.png",
+            "data": ":sca(长草)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-030.png",
+            "data": ":sca(献黄瓜)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-031.png",
+            "data": ":sca(邪恶)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-032.png",
+            "data": ":sca(期待)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-033.png",
+            "data": ":sca(得意)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-034.png",
+            "data": ":sca(吐舌)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-035.png",
+            "data": ":sca(喷血)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-036.png",
+            "data": ":sca(无所谓)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-037.png",
+            "data": ":sca(观察)",
+            "text": "观察"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-038.png",
+            "data": ":sca(暗地观察)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-039.png",
+            "data": ":sca(肿包)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-040.png",
+            "data": ":sca(中枪)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-041.png",
+            "data": ":sca(大囧)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-042.png",
+            "data": ":sca(呲牙)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-043.png",
+            "data": ":sca(抠鼻)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-044.png",
+            "data": ":sca(不说话)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-045.png",
+            "data": ":sca(咽气)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-046.png",
+            "data": ":sca(欢呼)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-047.png",
+            "data": ":sca(锁眉)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-048.png",
+            "data": ":sca(蜡烛)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-049.png",
+            "data": ":sca(坐等)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-050.png",
+            "data": ":sca(击掌)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-051.png",
+            "data": ":sca(惊喜)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-052.png",
+            "data": ":sca(喜极而泣)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-053.png",
+            "data": ":sca(抽烟)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-054.png",
+            "data": ":sca(不出所料)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-055.png",
+            "data": ":sca(愤怒)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-056.png",
+            "data": ":sca(无奈)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-057.png",
+            "data": ":sca(黑线)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-058.png",
+            "data": ":sca(投降)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-059.png",
+            "data": ":sca(看热闹)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-060.png",
+            "data": ":sca(扇耳光)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-061.png",
+            "data": ":sca(小眼睛)"
+        },
+        {
+            "icon": "assets/owo/aru/slowcloud-aru-062.png",
+            "data": ":sca(中刀)"
+        }
+    ],
+    "颜文字": [
+        {
+            "icon": "|´・ω・)ノ",
+            "data": "|´・ω・)ノ"
+        },
+        {
+            "icon": "ヾ(≧∇≦*)ゝ",
+            "data": "ヾ(≧∇≦*)ゝ"
+        },
+        {
+            "icon": "(☆ω☆)",
+            "data": "(☆ω☆)"
+        },
+        {
+            "icon": "（╯‵□′）╯︵┴─┴",
+            "data": "（╯‵□′）╯︵┴─┴"
+        },
+        {
+            "icon": "￣﹃￣",
+            "data": "￣﹃￣"
+        },
+        {
+            "icon": "(/ω＼)",
+            "data": "(/ω＼)"
+        },
+        {
+            "icon": "∠( ᐛ 」∠)＿",
+            "data": "∠( ᐛ 」∠)＿"
+        },
+        {
+            "icon": "(๑•̀ㅁ•́ฅ)",
+            "data": "(๑•̀ㅁ•́ฅ)"
+        },
+        {
+            "icon": "→_→",
+            "data": "→_→"
+        },
+        {
+            "icon": "୧(๑•̀⌄•́๑)૭",
+            "data": "୧(๑•̀⌄•́๑)૭"
+        },
+        {
+            "icon": "٩(ˊᗜˋ*)و",
+            "data": "٩(ˊᗜˋ*)و"
+        },
+        {
+            "icon": "(ノ°ο°)ノ",
+            "data": "(ノ°ο°)ノ"
+        },
+        {
+            "icon": "(´இ皿இ｀)",
+            "data": "(´இ皿இ｀)"
+        },
+        {
+            "icon": "⌇●﹏●⌇",
+            "data": "⌇●﹏●⌇"
+        },
+        {
+            "icon": "(ฅ´ω`ฅ)",
+            "data": "(ฅ´ω`ฅ)"
+        },
+        {
+            "icon": "(╯°A°)╯︵○○○",
+            "data": "(╯°A°)╯︵○○○"
+        },
+        {
+            "icon": "φ(￣∇￣o)",
+            "data": "φ(￣∇￣o)"
+        },
+        {
+            "icon": "ヾ(´･ ･｀｡)ノ\"",
+            "data": "ヾ(´･ ･｀｡)ノ\""
+        },
+        {
+            "icon": "( ง ᵒ̌皿ᵒ̌)ง⁼³₌₃",
+            "data": "( ง ᵒ̌皿ᵒ̌)ง⁼³₌₃"
+        },
+        {
+            "icon": "(ó﹏ò｡)",
+            "data": "(ó﹏ò｡)"
+        },
+        {
+            "icon": "Σ(っ °Д °;)っ",
+            "data": "Σ(っ °Д °;)っ"
+        },
+        {
+            "icon": "( ,,´･ω･)ﾉ\"(´っω･｀｡)",
+            "data": "( ,,´･ω･)ﾉ\"(´っω･｀｡)"
+        },
+        {
+            "icon": "╮(╯▽╰)╭ ",
+            "data": "╮(╯▽╰)╭ "
+        },
+        {
+            "icon": "o(*////▽////*)q ",
+            "data": "o(*////▽////*)q "
+        },
+        {
+            "icon": "＞﹏＜",
+            "data": "＞﹏＜"
+        },
+        {
+            "icon": "( ๑´•ω•) \"(ㆆᴗㆆ)",
+            "data": "( ๑´•ω•) \"(ㆆᴗㆆ)"
+        },
+        {
+            "icon": "(｡•ˇ‸ˇ•｡)",
+            "data": "(｡•ˇ‸ˇ•｡)"
+        }
+    ]
+}

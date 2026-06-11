@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5187700 */
-  src: url('iconfont.woff2?t=1780405909045') format('woff2'),
-       url('iconfont.woff?t=1780405909045') format('woff'),
-       url('iconfont.ttf?t=1780405909045') format('truetype');
+  src: url('iconfont.woff2?t=1781163677052') format('woff2'),
+       url('iconfont.woff?t=1781163677052') format('woff'),
+       url('iconfont.ttf?t=1781163677052') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,10 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-slowcloudemoji:before {
+  content: "\e6f6";
 }
 
 .icon-slowcloudgithub:before {

@@ -52,7 +52,7 @@
                     </div>
                 <?php endif; ?>
 
-                <p class="slowcloud-comment-field">
+                <div class="slowcloud-comment-field">
                     <div class="slowcloud-comment-tools">
                         <span
                             class="slowcloud-comment-emoji-toggle iconfont icon-slowcloudemoji"
@@ -69,70 +69,60 @@
                             data-slowcloud-emoji-panel
                             hidden
                         >
+                            <?php $emojiGroups = slowcloud_comment_emoji_groups($this); ?>
                             <div class="slowcloud-owo" data-slowcloud-owo>
                                 <div class="slowcloud-owo-tabs" role="tablist" aria-label="<?php _e('表情分类'); ?>">
-                                    <button
-                                        type="button"
-                                        class="slowcloud-owo-tab is-active"
-                                        data-slowcloud-emoji-tab
-                                        data-target="emoji"
-                                        role="tab"
-                                        aria-selected="true"
-                                    >
-                                        emoji
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="slowcloud-owo-tab"
-                                        data-slowcloud-emoji-tab
-                                        data-target="kaomoji"
-                                        role="tab"
-                                        aria-selected="false"
-                                    >
-                                        颜文字
-                                    </button>
+                                    <?php $isFirstEmojiTab = true; ?>
+                                    <?php foreach ($emojiGroups as $groupKey => $group): ?>
+                                        <button
+                                            type="button"
+                                            class="slowcloud-owo-tab<?php if ($isFirstEmojiTab): ?> is-active<?php endif; ?>"
+                                            data-slowcloud-emoji-tab
+                                            data-target="<?php echo htmlspecialchars($groupKey, ENT_QUOTES, $this->options->charset); ?>"
+                                            role="tab"
+                                            aria-selected="<?php echo $isFirstEmojiTab ? 'true' : 'false'; ?>"
+                                        >
+                                            <?php echo htmlspecialchars((string) $group['label'], ENT_QUOTES, $this->options->charset); ?>
+                                        </button>
+                                        <?php $isFirstEmojiTab = false; ?>
+                                    <?php endforeach; ?>
                                 </div>
 
                                 <div class="slowcloud-owo-panels">
-                                    <div class="slowcloud-owo-group is-active" data-slowcloud-emoji-group="emoji" role="tabpanel">
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="😀" aria-label="<?php _e('微笑'); ?>">😀</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="😆" aria-label="<?php _e('开心'); ?>">😆</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🥹" aria-label="<?php _e('感动'); ?>">🥹</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="😂" aria-label="<?php _e('大笑'); ?>">😂</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🥰" aria-label="<?php _e('喜欢'); ?>">🥰</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🤔" aria-label="<?php _e('思考'); ?>">🤔</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="😌" aria-label="<?php _e('放松'); ?>">😌</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="😴" aria-label="<?php _e('困了'); ?>">😴</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🙌" aria-label="<?php _e('庆祝'); ?>">🙌</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="✨" aria-label="<?php _e('闪亮'); ?>">✨</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="☁️" aria-label="<?php _e('云朵'); ?>">☁️</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🌙" aria-label="<?php _e('月亮'); ?>">🌙</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🍵" aria-label="<?php _e('喝茶'); ?>">🍵</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🌿" aria-label="<?php _e('植物'); ?>">🌿</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="🎈" aria-label="<?php _e('气球'); ?>">🎈</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item" data-slowcloud-emoji="💭" aria-label="<?php _e('想法'); ?>">💭</button>
-                                    </div>
-
-                                    <div class="slowcloud-owo-group" data-slowcloud-emoji-group="kaomoji" role="tabpanel" hidden>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="|´・ω・)ノ" aria-label="|´・ω・)ノ">|´・ω・)ノ</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="ヾ(≧▽≦*)o" aria-label="ヾ(≧▽≦*)o">ヾ(≧▽≦*)o</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="(*/ω＼*)" aria-label="(*/ω＼*)">(*/ω＼*)</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="(๑•̀ㅂ•́)و✧" aria-label="(๑•̀ㅂ•́)و✧">(๑•̀ㅂ•́)و✧</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="(╯°□°）╯︵ ┻━┻" aria-label="(╯°□°）╯︵ ┻━┻">(╯°□°）╯︵ ┻━┻</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="φ(゜▽゜*)♪" aria-label="φ(゜▽゜*)♪">φ(゜▽゜*)♪</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="(～￣▽￣)～" aria-label="(～￣▽￣)～">(～￣▽￣)～</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="Σ(っ °Д °;)っ" aria-label="Σ(っ °Д °;)っ">Σ(っ °Д °;)っ</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="QAQ" aria-label="QAQ">QAQ</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="( •̀ ω •́ )✧" aria-label="( •̀ ω •́ )✧">( •̀ ω •́ )✧</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="(❁´◡`❁)" aria-label="(❁´◡`❁)">(❁´◡`❁)</button>
-                                        <button type="button" class="slowcloud-comment-emoji-item slowcloud-comment-emoji-item-text" data-slowcloud-emoji="(っ °Д °;)っ" aria-label="(っ °Д °;)っ">(っ °Д °;)っ</button>
-                                    </div>
+                                    <?php $isFirstEmojiGroup = true; ?>
+                                    <?php foreach ($emojiGroups as $groupKey => $group): ?>
+                                        <div
+                                            class="slowcloud-owo-group<?php if ($isFirstEmojiGroup): ?> is-active<?php endif; ?>"
+                                            data-slowcloud-emoji-group="<?php echo htmlspecialchars($groupKey, ENT_QUOTES, $this->options->charset); ?>"
+                                            role="tabpanel"
+                                            <?php if (!$isFirstEmojiGroup): ?>hidden<?php endif; ?>
+                                        >
+                                            <?php foreach ($group['items'] as $item): ?>
+                                                <?php
+                                                $isImage = !empty($item['image']) && !empty($item['url']);
+                                                $itemClass = 'slowcloud-comment-emoji-item';
+                                                if ($isImage) {
+                                                    $itemClass .= ' slowcloud-comment-emoji-item-image';
+                                                } elseif ($groupKey === 'kaomoji') {
+                                                    $itemClass .= ' slowcloud-comment-emoji-item-text';
+                                                }
+                                                ?>
+                                                <button
+                                                    type="button"
+                                                    class="<?php echo htmlspecialchars($itemClass, ENT_QUOTES, $this->options->charset); ?>"
+                                                    data-slowcloud-emoji="<?php echo htmlspecialchars((string) $item['value'], ENT_QUOTES, $this->options->charset); ?>"
+                                                    aria-label="<?php echo htmlspecialchars((string) $item['name'], ENT_QUOTES, $this->options->charset); ?>"
+                                                ><?php if ($isImage): ?><img src="<?php echo htmlspecialchars((string) $item['url'], ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars((string) $item['name'], ENT_QUOTES, $this->options->charset); ?>" loading="lazy"><?php else: ?><?php echo htmlspecialchars((string) $item['value'], ENT_QUOTES, $this->options->charset); ?><?php endif; ?></button>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php $isFirstEmojiGroup = false; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <textarea rows="5" name="text" id="textarea" placeholder="<?php _e('写点什么吧…'); ?>" required><?php $this->remember('text'); ?></textarea>
-                </p>
+                </div>
 
                 <p class="slowcloud-comment-submit">
                     <button type="submit"><?php _e('提交评论'); ?></button>
