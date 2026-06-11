@@ -8,6 +8,8 @@ Slowcloud 是一个为 Typecho 编写的轻量博客主题，视觉上偏安静�
 
 示例站点：[https://slowcloud.cn](https://slowcloud.cn)
 
+![Slowcloud 主题截图](./screenshot.png)
+
 ## 环境要求
 
 - 基于 Typecho `1.3.0` 开发和测试。
