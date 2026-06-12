@@ -1777,7 +1777,7 @@ function slowcloud_is_valid_front_page($archive): bool
     return true;
 }
 
-function slowcloud_should_track_request($archive): bool
+function slowcloud_should_record_visit($archive): bool
 {
     $request = $archive->request ?? \Widget\Options::alloc()->request;
     $user = \Widget\User::alloc();
@@ -1791,7 +1791,7 @@ function slowcloud_should_track_request($archive): bool
     }
 
     $requestMethod = strtoupper((string) $request->getServer('REQUEST_METHOD', 'GET'));
-    if ($requestMethod !== 'GET') {
+    if ($requestMethod !== 'GET' && $requestMethod !== 'HEAD') {
         return false;
     }
 
@@ -1803,38 +1803,17 @@ function slowcloud_should_track_request($archive): bool
         return false;
     }
 
-    $accept = strtolower((string) $request->getServer('HTTP_ACCEPT', ''));
-    if (
-        $accept !== ''
-        && strpos($accept, 'text/html') === false
-        && strpos($accept, 'application/xhtml+xml') === false
-        && strpos($accept, '*/*') === false
-    ) {
-        return false;
-    }
-
-    $purpose = strtolower((string) $request->getServer('HTTP_PURPOSE', ''));
-    $secPurpose = strtolower((string) $request->getServer('HTTP_SEC_PURPOSE', ''));
-    if (
-        strpos($purpose, 'prefetch') !== false
-        || strpos($purpose, 'prerender') !== false
-        || strpos($secPurpose, 'prefetch') !== false
-        || strpos($secPurpose, 'prerender') !== false
-    ) {
-        return false;
-    }
-
-    $secFetchDest = strtolower((string) $request->getServer('HTTP_SEC_FETCH_DEST', ''));
-    if ($secFetchDest !== '' && $secFetchDest !== 'document') {
-        return false;
-    }
-
     $path = (string) ($request->getPathInfo() ?? '');
     if (slowcloud_is_excluded_stats_path($path)) {
         return false;
     }
 
-    $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
+    return slowcloud_is_valid_front_page($archive);
+}
+
+function slowcloud_is_bot_user_agent(string $userAgent): bool
+{
+    $userAgent = strtolower($userAgent);
     $botKeywords = [
         'bot',
         'spider',
@@ -1886,11 +1865,58 @@ function slowcloud_should_track_request($archive): bool
 
     foreach ($botKeywords as $needle) {
         if ($userAgent !== '' && strpos($userAgent, $needle) !== false) {
-            return false;
+            return true;
         }
     }
 
-    return slowcloud_is_valid_front_page($archive);
+    return false;
+}
+
+function slowcloud_should_count_visit($archive): bool
+{
+    $request = $archive->request ?? \Widget\Options::alloc()->request;
+    $requestMethod = strtoupper((string) $request->getServer('REQUEST_METHOD', 'GET'));
+    if ($requestMethod !== 'GET') {
+        return false;
+    }
+
+    $accept = strtolower((string) $request->getServer('HTTP_ACCEPT', ''));
+    if (
+        $accept !== ''
+        && strpos($accept, 'text/html') === false
+        && strpos($accept, 'application/xhtml+xml') === false
+        && strpos($accept, '*/*') === false
+    ) {
+        return false;
+    }
+
+    $purpose = strtolower((string) $request->getServer('HTTP_PURPOSE', ''));
+    $secPurpose = strtolower((string) $request->getServer('HTTP_SEC_PURPOSE', ''));
+    if (
+        strpos($purpose, 'prefetch') !== false
+        || strpos($purpose, 'prerender') !== false
+        || strpos($secPurpose, 'prefetch') !== false
+        || strpos($secPurpose, 'prerender') !== false
+    ) {
+        return false;
+    }
+
+    $secFetchDest = strtolower((string) $request->getServer('HTTP_SEC_FETCH_DEST', ''));
+    if ($secFetchDest !== '' && $secFetchDest !== 'document') {
+        return false;
+    }
+
+    $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
+    if (slowcloud_is_bot_user_agent($userAgent)) {
+        return false;
+    }
+
+    return true;
+}
+
+function slowcloud_should_track_request($archive): bool
+{
+    return slowcloud_should_record_visit($archive) && slowcloud_should_count_visit($archive);
 }
 
 function slowcloud_stats_page_type($archive): string
@@ -1947,7 +1973,7 @@ function slowcloud_track_site_visit($archive): void
         $context = slowcloud_get_stats_context();
         $statsTarget = $context !== [] ? $context : $archive;
 
-        if (!slowcloud_should_track_request($statsTarget)) {
+        if (!slowcloud_should_record_visit($statsTarget)) {
             return;
         }
 
@@ -1976,6 +2002,10 @@ function slowcloud_track_site_visit($archive): void
             'path' => $path,
             'page_type' => $pageType,
         ]));
+
+        if (!slowcloud_should_count_visit($statsTarget)) {
+            return;
+        }
 
         $visitorsTable = slowcloud_stats_table('visitors');
         $visitorRow = $db->fetchRow($db->select()
@@ -2020,7 +2050,7 @@ function slowcloud_stats_overview(): array
 
     $db = \Typecho\Db::get();
     $dailyTable = slowcloud_stats_table('stats_daily');
-    $visitsTable = slowcloud_stats_table('visits');
+    $visitorsTable = slowcloud_stats_table('visitors');
     $today = (new \Typecho\Date(\Typecho\Date::time()))->format('Y-m-d');
 
     $totalRow = $db->fetchRow($db->select([
@@ -2033,7 +2063,7 @@ function slowcloud_stats_overview(): array
         ->where('stat_date = ?', $today)
         ->limit(1));
 
-    $todayIpRow = $db->fetchRow("SELECT COUNT(DISTINCT ip_hash) AS total FROM {$visitsTable} WHERE stat_date = '{$today}'");
+    $todayIpRow = $db->fetchRow("SELECT COUNT(DISTINCT ip_hash) AS total FROM {$visitorsTable} WHERE stat_date = '{$today}'");
 
     return [
         'total_pv' => (int) ($totalRow['total_pv'] ?? 0),
