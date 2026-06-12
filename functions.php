@@ -1456,7 +1456,7 @@ function slowcloud_stats_set_option(string $name, string $value): void
 
 function slowcloud_stats_storage_version(): string
 {
-    return '1';
+    return '2';
 }
 
 function slowcloud_ensure_stats_storage(): void
@@ -1473,7 +1473,61 @@ function slowcloud_ensure_stats_storage(): void
     }
 
     slowcloud_create_stats_tables();
+    slowcloud_migrate_stats_tables();
     slowcloud_stats_set_option('stats_schema_version', slowcloud_stats_storage_version());
+}
+
+function slowcloud_stats_column_exists(string $table, string $column): bool
+{
+    $db = \Typecho\Db::get();
+    $adapter = $db->getAdapterName();
+
+    try {
+        if (stripos($adapter, 'SQLite') !== false) {
+            $rows = $db->fetchAll("PRAGMA table_info({$table})");
+            foreach ((array) $rows as $row) {
+                if (strcasecmp((string) ($row['name'] ?? ''), $column) === 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (stripos($adapter, 'Pgsql') !== false) {
+            $safeTable = str_replace("'", "''", $table);
+            $safeColumn = str_replace("'", "''", $column);
+            $row = $db->fetchRow("SELECT column_name FROM information_schema.columns WHERE table_name = '{$safeTable}' AND column_name = '{$safeColumn}' LIMIT 1");
+
+            return !empty($row);
+        }
+
+        $safeTable = str_replace('`', '``', $table);
+        $safeColumn = str_replace("'", "''", $column);
+        $row = $db->fetchRow("SHOW COLUMNS FROM `{$safeTable}` LIKE '{$safeColumn}'");
+
+        return !empty($row);
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+
+function slowcloud_migrate_stats_tables(): void
+{
+    $db = \Typecho\Db::get();
+    $adapter = $db->getAdapterName();
+    $visitsTable = slowcloud_stats_table('visits');
+
+    if (slowcloud_stats_column_exists($visitsTable, 'is_counted')) {
+        return;
+    }
+
+    if (stripos($adapter, 'SQLite') !== false || stripos($adapter, 'Pgsql') !== false) {
+        $db->query("ALTER TABLE {$visitsTable} ADD COLUMN is_counted int NOT NULL DEFAULT 1");
+        return;
+    }
+
+    $db->query("ALTER TABLE `{$visitsTable}` ADD COLUMN `is_counted` tinyint(1) unsigned NOT NULL DEFAULT 1");
 }
 
 function slowcloud_create_stats_tables(): void
@@ -1519,6 +1573,7 @@ function slowcloud_create_stats_tables(): void
                 user_agent varchar(511) DEFAULT NULL,
                 referer varchar(255) DEFAULT NULL,
                 path varchar(255) DEFAULT NULL,
+                is_counted int(1) NOT NULL DEFAULT 1,
                 page_type varchar(32) DEFAULT NULL
             )",
             "CREATE INDEX IF NOT EXISTS {$visitsTable}_stat_date ON {$visitsTable} (stat_date)",
@@ -1560,6 +1615,7 @@ function slowcloud_create_stats_tables(): void
                 user_agent varchar(511) DEFAULT NULL,
                 referer varchar(255) DEFAULT NULL,
                 path varchar(255) DEFAULT NULL,
+                is_counted int NOT NULL DEFAULT 1,
                 page_type varchar(32) DEFAULT NULL
             )",
             "CREATE INDEX IF NOT EXISTS {$visitsTable}_stat_date ON {$visitsTable} (stat_date)",
@@ -1603,6 +1659,7 @@ function slowcloud_create_stats_tables(): void
                 `user_agent` varchar(511) DEFAULT NULL,
                 `referer` varchar(255) DEFAULT NULL,
                 `path` varchar(255) DEFAULT NULL,
+                `is_counted` tinyint(1) unsigned NOT NULL DEFAULT 1,
                 `page_type` varchar(32) DEFAULT NULL,
                 PRIMARY KEY (`id`),
                 KEY `stat_date` (`stat_date`),
@@ -1777,7 +1834,7 @@ function slowcloud_is_valid_front_page($archive): bool
     return true;
 }
 
-function slowcloud_should_track_request($archive): bool
+function slowcloud_should_record_visit($archive): bool
 {
     $request = $archive->request ?? \Widget\Options::alloc()->request;
     $user = \Widget\User::alloc();
@@ -1834,7 +1891,12 @@ function slowcloud_should_track_request($archive): bool
         return false;
     }
 
-    $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
+    return slowcloud_is_valid_front_page($archive);
+}
+
+function slowcloud_is_bot_user_agent(string $userAgent): bool
+{
+    $userAgent = strtolower($userAgent);
     $botKeywords = [
         'bot',
         'spider',
@@ -1886,11 +1948,58 @@ function slowcloud_should_track_request($archive): bool
 
     foreach ($botKeywords as $needle) {
         if ($userAgent !== '' && strpos($userAgent, $needle) !== false) {
-            return false;
+            return true;
         }
     }
 
-    return slowcloud_is_valid_front_page($archive);
+    return false;
+}
+
+function slowcloud_should_count_visit($archive): bool
+{
+    $request = $archive->request ?? \Widget\Options::alloc()->request;
+    $requestMethod = strtoupper((string) $request->getServer('REQUEST_METHOD', 'GET'));
+    if ($requestMethod !== 'GET') {
+        return false;
+    }
+
+    $accept = strtolower((string) $request->getServer('HTTP_ACCEPT', ''));
+    if (
+        $accept !== ''
+        && strpos($accept, 'text/html') === false
+        && strpos($accept, 'application/xhtml+xml') === false
+        && strpos($accept, '*/*') === false
+    ) {
+        return false;
+    }
+
+    $purpose = strtolower((string) $request->getServer('HTTP_PURPOSE', ''));
+    $secPurpose = strtolower((string) $request->getServer('HTTP_SEC_PURPOSE', ''));
+    if (
+        strpos($purpose, 'prefetch') !== false
+        || strpos($purpose, 'prerender') !== false
+        || strpos($secPurpose, 'prefetch') !== false
+        || strpos($secPurpose, 'prerender') !== false
+    ) {
+        return false;
+    }
+
+    $secFetchDest = strtolower((string) $request->getServer('HTTP_SEC_FETCH_DEST', ''));
+    if ($secFetchDest !== '' && $secFetchDest !== 'document') {
+        return false;
+    }
+
+    $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
+    if (slowcloud_is_bot_user_agent($userAgent)) {
+        return false;
+    }
+
+    return true;
+}
+
+function slowcloud_should_track_request($archive): bool
+{
+    return slowcloud_should_record_visit($archive) && slowcloud_should_count_visit($archive);
 }
 
 function slowcloud_stats_page_type($archive): string
@@ -1947,7 +2056,7 @@ function slowcloud_track_site_visit($archive): void
         $context = slowcloud_get_stats_context();
         $statsTarget = $context !== [] ? $context : $archive;
 
-        if (!slowcloud_should_track_request($statsTarget)) {
+        if (!slowcloud_should_record_visit($statsTarget)) {
             return;
         }
 
@@ -1964,6 +2073,7 @@ function slowcloud_track_site_visit($archive): void
         $ipHash = sha1($ip);
         $userAgent = substr((string) $request->getServer('HTTP_USER_AGENT', ''), 0, 511);
         $referer = substr((string) ($request->getReferer() ?? ''), 0, 255);
+        $isCounted = slowcloud_should_count_visit($statsTarget);
 
         $db->query($db->insert(slowcloud_stats_table('visits'))->rows([
             'visitor_id' => $visitorId,
@@ -1974,8 +2084,13 @@ function slowcloud_track_site_visit($archive): void
             'user_agent' => $userAgent,
             'referer' => $referer,
             'path' => $path,
+            'is_counted' => $isCounted ? 1 : 0,
             'page_type' => $pageType,
         ]));
+
+        if (!$isCounted) {
+            return;
+        }
 
         $visitorsTable = slowcloud_stats_table('visitors');
         $visitorRow = $db->fetchRow($db->select()
@@ -2020,7 +2135,7 @@ function slowcloud_stats_overview(): array
 
     $db = \Typecho\Db::get();
     $dailyTable = slowcloud_stats_table('stats_daily');
-    $visitsTable = slowcloud_stats_table('visits');
+    $visitorsTable = slowcloud_stats_table('visitors');
     $today = (new \Typecho\Date(\Typecho\Date::time()))->format('Y-m-d');
 
     $totalRow = $db->fetchRow($db->select([
@@ -2033,7 +2148,7 @@ function slowcloud_stats_overview(): array
         ->where('stat_date = ?', $today)
         ->limit(1));
 
-    $todayIpRow = $db->fetchRow("SELECT COUNT(DISTINCT ip_hash) AS total FROM {$visitsTable} WHERE stat_date = '{$today}'");
+    $todayIpRow = $db->fetchRow("SELECT COUNT(DISTINCT ip_hash) AS total FROM {$visitorsTable} WHERE stat_date = '{$today}'");
 
     return [
         'total_pv' => (int) ($totalRow['total_pv'] ?? 0),
