@@ -851,8 +851,14 @@ function slowcloud_record_view($archive): int
         return 0;
     }
 
+    $currentViews = slowcloud_views($archive);
+    $user = \Widget\User::alloc();
+    if ($user->hasLogin() && isset($archive->authorId) && (int) $archive->authorId === (int) $user->uid) {
+        return $currentViews;
+    }
+
     $cid = (int) $archive->cid;
-    $views = slowcloud_views($archive) + 1;
+    $views = $currentViews + 1;
     $db = \Typecho\Db::get();
     $exists = $db->fetchRow($db->select('cid')
         ->from('table.fields')
@@ -1785,7 +1791,7 @@ function slowcloud_should_track_request($archive): bool
     }
 
     $requestMethod = strtoupper((string) $request->getServer('REQUEST_METHOD', 'GET'));
-    if ($requestMethod !== 'GET' && $requestMethod !== 'HEAD') {
+    if ($requestMethod !== 'GET') {
         return false;
     }
 
@@ -1797,13 +1803,88 @@ function slowcloud_should_track_request($archive): bool
         return false;
     }
 
+    $accept = strtolower((string) $request->getServer('HTTP_ACCEPT', ''));
+    if (
+        $accept !== ''
+        && strpos($accept, 'text/html') === false
+        && strpos($accept, 'application/xhtml+xml') === false
+        && strpos($accept, '*/*') === false
+    ) {
+        return false;
+    }
+
+    $purpose = strtolower((string) $request->getServer('HTTP_PURPOSE', ''));
+    $secPurpose = strtolower((string) $request->getServer('HTTP_SEC_PURPOSE', ''));
+    if (
+        strpos($purpose, 'prefetch') !== false
+        || strpos($purpose, 'prerender') !== false
+        || strpos($secPurpose, 'prefetch') !== false
+        || strpos($secPurpose, 'prerender') !== false
+    ) {
+        return false;
+    }
+
+    $secFetchDest = strtolower((string) $request->getServer('HTTP_SEC_FETCH_DEST', ''));
+    if ($secFetchDest !== '' && $secFetchDest !== 'document') {
+        return false;
+    }
+
     $path = (string) ($request->getPathInfo() ?? '');
     if (slowcloud_is_excluded_stats_path($path)) {
         return false;
     }
 
     $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
-    foreach (['bot', 'spider', 'crawler', 'curl', 'wget', 'python-requests'] as $needle) {
+    $botKeywords = [
+        'bot',
+        'spider',
+        'crawler',
+        'crawl',
+        'slurp',
+        'curl',
+        'wget',
+        'python-requests',
+        'httpclient',
+        'http-client',
+        'libwww-perl',
+        'go-http-client',
+        'java/',
+        'okhttp',
+        'scrapy',
+        'googlebot',
+        'bingbot',
+        'baiduspider',
+        'sogou',
+        '360spider',
+        'bytespider',
+        'petalbot',
+        'yandexbot',
+        'duckduckbot',
+        'applebot',
+        'facebookexternalhit',
+        'twitterbot',
+        'linkedinbot',
+        'telegrambot',
+        'discordbot',
+        'slackbot',
+        'ahrefsbot',
+        'semrushbot',
+        'mj12bot',
+        'dotbot',
+        'siteauditbot',
+        'serpstatbot',
+        'seekportbot',
+        'blexbot',
+        'ccbot',
+        'gptbot',
+        'chatgpt-user',
+        'claudebot',
+        'perplexitybot',
+        'anthropic-ai',
+        'google-extended',
+    ];
+
+    foreach ($botKeywords as $needle) {
         if ($userAgent !== '' && strpos($userAgent, $needle) !== false) {
             return false;
         }
