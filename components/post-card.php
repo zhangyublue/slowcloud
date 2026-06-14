@@ -2,7 +2,7 @@
     <?php $poster = slowcloud_poster($this); ?>
     <?php if ($poster !== ''): ?>
         <a class="slowcloud-article-poster-link" href="<?php $this->permalink(); ?>" aria-label="<?php $this->title(); ?>">
-            <img class="slowcloud-article-poster" src="<?php echo htmlspecialchars($poster, ENT_QUOTES, $this->options->charset); ?>" alt="<?php $this->title(); ?>">
+            <img class="slowcloud-article-poster" src="<?php echo htmlspecialchars($poster, ENT_QUOTES, $this->options->charset); ?>" alt="<?php $this->title(); ?>" itemprop="image" loading="lazy" decoding="async">
         </a>
     <?php endif; ?>
 

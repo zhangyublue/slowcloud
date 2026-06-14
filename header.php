@@ -6,6 +6,7 @@
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
 <?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
+<?php $slowcloudSeoContext = slowcloud_seo_context($this); ?>
 <?php $slowcloudPrismBaseUrl = rtrim((string) $this->options->themeUrl('assets/typecho/prism', 'slowcloud'), '/') . '/'; ?>
 <?php $slowcloudContentRenderVersion = @filemtime(__DIR__ . '/assets/css/content-render.css') ?: time(); ?>
 <?php $slowcloudCodeHighlightVersion = @filemtime(__DIR__ . '/assets/css/code-highlight.css') ?: time(); ?>
@@ -17,14 +18,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="renderer" content="webkit">
     <meta name="color-scheme" content="light dark">
-    <title><?php $this->archiveTitle([
-        'category' => _t('分类 %s'),
-        'search'   => _t('搜索 %s'),
-        'tag'      => _t('标签 %s'),
-        'author'   => _t('%s 的文章')
-    ], '', ' - '); ?><?php echo htmlspecialchars($slowcloudTabTitle, ENT_QUOTES, $this->options->charset); ?></title>
+    <title><?php echo slowcloud_seo_escape((string) $slowcloudSeoContext['title'], $this->options->charset); ?></title>
     <link rel="icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
     <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
+    <?php slowcloud_render_seo_meta($this, $slowcloudSeoContext); ?>
 
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css'); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/css/main.css'); ?>">
@@ -34,7 +31,7 @@
     <link id="slowcloud-prism-theme-okaidia" rel="stylesheet" href="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'themes/prism-okaidia.css', ENT_QUOTES, $this->options->charset); ?>">
     <link rel="stylesheet" href="<?php echo htmlspecialchars($this->options->themeUrl('assets/css/code-highlight.css', 'slowcloud') . '?v=' . $slowcloudCodeHighlightVersion, ENT_QUOTES, $this->options->charset); ?>">
     <link rel="stylesheet" href="<?php $this->options->themeUrl('assets/iconfont/iconfont.css'); ?>">
-    <?php $this->header(); ?>
+    <?php slowcloud_render_typecho_header($this, 'description=&keywords=&social='); ?>
 </head>
 <body class="slowcloud-body" data-slowcloud-theme-mode="<?php echo htmlspecialchars($slowcloudThemeMode, ENT_QUOTES, $this->options->charset); ?>">
 <div class="slowcloud-site-wrap" style="--slowcloud-container: <?php echo htmlspecialchars($slowcloudSiteWidth, ENT_QUOTES, $this->options->charset); ?>;">

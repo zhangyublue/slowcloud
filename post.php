@@ -21,7 +21,7 @@
 
             <?php $poster = slowcloud_poster($this); ?>
             <?php if ($poster !== ''): ?>
-                <img class="slowcloud-article-poster slowcloud-article-poster-detail" src="<?php echo htmlspecialchars($poster, ENT_QUOTES, $this->options->charset); ?>" alt="<?php $this->title(); ?>">
+                <img class="slowcloud-article-poster slowcloud-article-poster-detail" src="<?php echo htmlspecialchars($poster, ENT_QUOTES, $this->options->charset); ?>" alt="<?php $this->title(); ?>" itemprop="image" loading="eager" decoding="async" fetchpriority="high">
             <?php endif; ?>
 
             <div class="slowcloud-entry-content" itemprop="articleBody">

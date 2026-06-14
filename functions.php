@@ -719,6 +719,607 @@ function slowcloud_poster($archive): string
     return '';
 }
 
+function slowcloud_seo_clean_text(string $text, int $length = 160): string
+{
+    $text = html_entity_decode(strip_tags($text), ENT_QUOTES, 'UTF-8');
+    $text = str_replace("\xc2\xa0", ' ', $text);
+    $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+
+    if ($text === '') {
+        return '';
+    }
+
+    return \Typecho\Common::subStr($text, 0, $length);
+}
+
+function slowcloud_seo_escape(string $value, string $charset): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, $charset);
+}
+
+function slowcloud_seo_is($archive, string $type): bool
+{
+    if (!is_object($archive) || !method_exists($archive, 'is')) {
+        return false;
+    }
+
+    try {
+        return (bool) $archive->is($type);
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+
+function slowcloud_seo_archive_title($archive): string
+{
+    if (!is_object($archive)) {
+        return '';
+    }
+
+    if (method_exists($archive, 'archiveTitle')) {
+        $title = slowcloud_capture_output(static function () use ($archive): void {
+            $archive->archiveTitle([
+                'category' => _t('分类 %s'),
+                'search' => _t('搜索 %s'),
+                'tag' => _t('标签 %s'),
+                'author' => _t('%s 的文章'),
+            ], '', '');
+        });
+
+        $title = slowcloud_seo_clean_text($title, 120);
+        if ($title !== '') {
+            return $title;
+        }
+    }
+
+    if (!slowcloud_seo_is($archive, 'single')) {
+        return '';
+    }
+
+    return slowcloud_seo_clean_text((string) ($archive->title ?? ''), 120);
+}
+
+function slowcloud_seo_absolute_url($archive, string $url): string
+{
+    $url = trim($url);
+    if ($url === '') {
+        return '';
+    }
+
+    if (preg_match('#^https?://#i', $url)) {
+        return $url;
+    }
+
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return \Typecho\Common::url(ltrim($url, '/'), (string) ($options->siteUrl ?? ''));
+}
+
+function slowcloud_seo_strip_url_query(string $url): string
+{
+    $parts = parse_url($url);
+    if (!is_array($parts)) {
+        return $url;
+    }
+
+    $cleanUrl = '';
+    if (isset($parts['scheme'])) {
+        $cleanUrl .= $parts['scheme'] . '://';
+    }
+    if (isset($parts['user'])) {
+        $cleanUrl .= $parts['user'];
+        if (isset($parts['pass'])) {
+            $cleanUrl .= ':' . $parts['pass'];
+        }
+        $cleanUrl .= '@';
+    }
+    if (isset($parts['host'])) {
+        $cleanUrl .= $parts['host'];
+    }
+    if (isset($parts['port'])) {
+        $cleanUrl .= ':' . $parts['port'];
+    }
+
+    $cleanUrl .= $parts['path'] ?? '';
+
+    return $cleanUrl !== '' ? $cleanUrl : $url;
+}
+
+function slowcloud_seo_host_key(array $parts): string
+{
+    if (empty($parts['host'])) {
+        return '';
+    }
+
+    return strtolower((string) $parts['host']) . ':' . (string) ($parts['port'] ?? '');
+}
+
+function slowcloud_seo_site_url($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return trim((string) ($options->siteUrl ?? ''));
+}
+
+function slowcloud_seo_request_host_key(): string
+{
+    $host = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($host === '') {
+        return '';
+    }
+
+    $parts = parse_url('http://' . $host);
+    return is_array($parts) ? slowcloud_seo_host_key($parts) : '';
+}
+
+function slowcloud_seo_normalize_site_url($archive, string $url): string
+{
+    $url = slowcloud_seo_absolute_url($archive, $url);
+    $siteUrl = slowcloud_seo_site_url($archive);
+    $urlParts = parse_url($url);
+    $siteParts = $siteUrl !== '' ? parse_url($siteUrl) : false;
+
+    if (!is_array($urlParts) || !is_array($siteParts) || empty($siteParts['host'])) {
+        return $url;
+    }
+
+    $urlHostKey = slowcloud_seo_host_key($urlParts);
+    $siteHostKey = slowcloud_seo_host_key($siteParts);
+    $requestHostKey = slowcloud_seo_request_host_key();
+
+    if ($urlHostKey === '' || ($urlHostKey !== $siteHostKey && $urlHostKey !== $requestHostKey)) {
+        return $url;
+    }
+
+    $normalized = ($siteParts['scheme'] ?? 'http') . '://' . $siteParts['host'];
+    if (isset($siteParts['port'])) {
+        $normalized .= ':' . $siteParts['port'];
+    }
+
+    $sitePath = isset($siteParts['path']) ? rtrim($siteParts['path'], '/') : '';
+    $path = $urlParts['path'] ?? '/';
+    if ($sitePath !== '' && $path !== $sitePath && strpos($path, $sitePath . '/') !== 0) {
+        $path = $sitePath . '/' . ltrim($path, '/');
+    }
+
+    $normalized .= $path !== '' ? $path : '/';
+    if (isset($urlParts['query'])) {
+        $normalized .= '?' . $urlParts['query'];
+    }
+    if (isset($urlParts['fragment'])) {
+        $normalized .= '#' . $urlParts['fragment'];
+    }
+
+    return $normalized;
+}
+
+function slowcloud_seo_current_url($archive): string
+{
+    $url = '';
+    if (is_object($archive) && method_exists($archive, 'getArchiveUrl')) {
+        $url = trim((string) $archive->getArchiveUrl());
+    }
+
+    if ($url === '') {
+        $url = trim((string) ($archive->permalink ?? ''));
+    }
+
+    if ($url === '') {
+        $options = $archive->options ?? \Widget\Options::alloc();
+        $url = (string) ($options->siteUrl ?? '');
+    }
+
+    return slowcloud_seo_strip_url_query(slowcloud_seo_normalize_site_url($archive, $url));
+}
+
+function slowcloud_seo_description($archive): string
+{
+    $description = '';
+
+    if (slowcloud_seo_is($archive, 'single')) {
+        $description = trim((string) ($archive->plainExcerpt ?? ''));
+    }
+
+    if ($description === '' && is_object($archive) && method_exists($archive, 'getArchiveDescription')) {
+        $description = trim((string) $archive->getArchiveDescription());
+    }
+
+    if ($description === '') {
+        $description = slowcloud_intro($archive);
+    }
+
+    $options = $archive->options ?? \Widget\Options::alloc();
+    if ($description === '') {
+        $description = (string) ($options->description ?? '');
+    }
+
+    return slowcloud_seo_clean_text($description, 160);
+}
+
+function slowcloud_seo_image($archive): string
+{
+    $image = '';
+    if (slowcloud_seo_is($archive, 'single')) {
+        $image = slowcloud_poster($archive);
+    }
+
+    if ($image === '') {
+        $image = slowcloud_header_background($archive);
+    }
+
+    if ($image === '') {
+        $image = slowcloud_logo_url($archive);
+    }
+
+    return slowcloud_seo_absolute_url($archive, $image);
+}
+
+function slowcloud_seo_datetime($value): string
+{
+    if (is_object($value) && method_exists($value, 'format')) {
+        return (string) $value->format('c');
+    }
+
+    $timestamp = (int) $value;
+    return $timestamp > 0 ? date('c', $timestamp) : '';
+}
+
+function slowcloud_seo_term_names($terms): array
+{
+    if (!is_array($terms)) {
+        return [];
+    }
+
+    $names = [];
+    foreach ($terms as $term) {
+        $name = is_array($term) ? trim((string) ($term['name'] ?? '')) : trim((string) $term);
+        if ($name !== '') {
+            $names[$name] = $name;
+        }
+    }
+
+    return array_values($names);
+}
+
+function slowcloud_seo_primary_category_data($archive): array
+{
+    $categories = $archive->categories ?? [];
+    if (!is_array($categories) || empty($categories)) {
+        return [];
+    }
+
+    $selected = null;
+    foreach ($categories as $category) {
+        if ((int) ($category['parent'] ?? 0) > 0) {
+            $selected = $category;
+            break;
+        }
+    }
+
+    if ($selected === null) {
+        $selected = end($categories);
+    }
+
+    $name = trim((string) ($selected['name'] ?? ''));
+    if ($name === '') {
+        return [];
+    }
+
+    return [
+        'name' => $name,
+        'url' => slowcloud_seo_normalize_site_url($archive, trim((string) ($selected['permalink'] ?? ''))),
+    ];
+}
+
+function slowcloud_seo_robots($archive): string
+{
+    $themeFile = slowcloud_safe_theme_file($archive);
+
+    if (
+        $themeFile === '404.php'
+        || slowcloud_seo_is($archive, 'search')
+        || slowcloud_seo_is($archive, 'feed')
+        || isset($_GET['preview'])
+    ) {
+        return 'noindex,follow';
+    }
+
+    return 'index,follow';
+}
+
+function slowcloud_seo_search_target($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $target = \Typecho\Router::url(
+        'search',
+        ['keywords' => '{search_term_string}'],
+        (string) ($options->index ?? $options->siteUrl ?? '')
+    );
+
+    if ($target === '#') {
+        $target = slowcloud_join_url((string) ($options->siteUrl ?? ''), 'search/{search_term_string}/');
+    }
+
+    return slowcloud_seo_normalize_site_url($archive, $target);
+}
+
+function slowcloud_seo_context($archive): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $siteName = trim((string) ($options->title ?? ''));
+    $titleSuffix = slowcloud_tab_title($archive);
+    if ($titleSuffix === '') {
+        $titleSuffix = $siteName !== '' ? $siteName : 'slowcloud';
+    }
+
+    $archiveTitle = slowcloud_seo_archive_title($archive);
+    $isIndex = slowcloud_seo_is($archive, 'index') || slowcloud_seo_is($archive, 'front');
+    $isPost = slowcloud_seo_is($archive, 'post');
+    $isPage = slowcloud_seo_is($archive, 'page');
+    $isSingle = slowcloud_seo_is($archive, 'single');
+
+    $title = $archiveTitle !== '' && !$isIndex
+        ? $archiveTitle . ' - ' . $titleSuffix
+        : $titleSuffix;
+
+    $authorName = '';
+    if (isset($archive->author) && is_object($archive->author)) {
+        $authorName = trim((string) ($archive->author->screenName ?? $archive->author->name ?? ''));
+    }
+    if ($authorName === '') {
+        $authorName = slowcloud_author_name($archive);
+    }
+
+    $keywords = [];
+    if ($isSingle) {
+        $keywords = array_values(array_unique(array_merge(
+            slowcloud_seo_term_names($archive->categories ?? []),
+            slowcloud_seo_term_names($archive->tags ?? [])
+        )));
+    } elseif ($archiveTitle !== '' && (slowcloud_seo_is($archive, 'category') || slowcloud_seo_is($archive, 'tag'))) {
+        $keywords = [$archiveTitle];
+    }
+
+    return [
+        'site_name' => $siteName !== '' ? $siteName : $titleSuffix,
+        'title' => $title,
+        'page_title' => $archiveTitle,
+        'description' => slowcloud_seo_description($archive),
+        'canonical' => slowcloud_seo_current_url($archive),
+        'image' => slowcloud_seo_image($archive),
+        'type' => $isPost ? 'article' : 'website',
+        'robots' => slowcloud_seo_robots($archive),
+        'author' => $authorName,
+        'published_time' => $isSingle ? slowcloud_seo_datetime($archive->created ?? 0) : '',
+        'modified_time' => $isSingle ? slowcloud_seo_datetime($archive->modified ?? ($archive->created ?? 0)) : '',
+        'keywords' => $keywords,
+        'category' => slowcloud_seo_primary_category_data($archive),
+        'is_index' => $isIndex,
+        'is_post' => $isPost,
+        'is_page' => $isPage,
+        'is_single' => $isSingle,
+    ];
+}
+
+function slowcloud_seo_json(array $data): string
+{
+    $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    return is_string($json) ? $json : '{}';
+}
+
+function slowcloud_seo_breadcrumb_items($archive, array $context): array
+{
+    if (!empty($context['is_index'])) {
+        return [];
+    }
+
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $items = [
+        [
+            'name' => _t('首页'),
+            'url' => slowcloud_seo_absolute_url($archive, (string) ($options->siteUrl ?? '')),
+        ],
+    ];
+
+    if (!empty($context['is_post']) && !empty($context['category']['name'])) {
+        $items[] = [
+            'name' => $context['category']['name'],
+            'url' => $context['category']['url'] ?? '',
+        ];
+    }
+
+    $pageTitle = (string) ($context['page_title'] ?: $context['title']);
+    if ($pageTitle !== '') {
+        $items[] = [
+            'name' => $pageTitle,
+            'url' => (string) $context['canonical'],
+        ];
+    }
+
+    return $items;
+}
+
+function slowcloud_render_json_ld($archive, array $context): void
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $siteUrl = slowcloud_seo_absolute_url($archive, (string) ($options->siteUrl ?? ''));
+    $siteUrl = $siteUrl !== '' ? rtrim($siteUrl, '/') . '/' : '';
+    $siteId = $siteUrl !== '' ? $siteUrl . '#website' : '';
+    $siteDescription = slowcloud_seo_clean_text(slowcloud_intro($archive), 160);
+    $graph = [];
+
+    if ($siteUrl !== '') {
+        $website = [
+            '@type' => 'WebSite',
+            '@id' => $siteId,
+            'url' => $siteUrl,
+            'name' => $context['site_name'],
+        ];
+
+        if ($siteDescription !== '') {
+            $website['description'] = $siteDescription;
+        }
+
+        $website['potentialAction'] = [
+            '@type' => 'SearchAction',
+            'target' => slowcloud_seo_search_target($archive),
+            'query-input' => 'required name=search_term_string',
+        ];
+
+        $graph[] = $website;
+    }
+
+    $pageNode = [
+        '@type' => !empty($context['is_post']) ? 'BlogPosting' : 'WebPage',
+        '@id' => $context['canonical'] !== '' ? $context['canonical'] . '#webpage' : '',
+        'url' => $context['canonical'],
+        'name' => $context['title'],
+        'headline' => $context['page_title'] !== '' ? $context['page_title'] : $context['title'],
+    ];
+
+    if ($siteId !== '') {
+        $pageNode['isPartOf'] = ['@id' => $siteId];
+    }
+    if ($context['description'] !== '') {
+        $pageNode['description'] = $context['description'];
+    }
+    if ($context['image'] !== '') {
+        $pageNode['image'] = [$context['image']];
+    }
+    if (!empty($context['is_post'])) {
+        if ($context['published_time'] !== '') {
+            $pageNode['datePublished'] = $context['published_time'];
+        }
+        if ($context['modified_time'] !== '') {
+            $pageNode['dateModified'] = $context['modified_time'];
+        }
+        if ($context['author'] !== '') {
+            $pageNode['author'] = [
+                '@type' => 'Person',
+                'name' => $context['author'],
+            ];
+        }
+
+        $publisher = [
+            '@type' => 'Organization',
+            'name' => $context['site_name'],
+        ];
+        $logoUrl = slowcloud_seo_absolute_url($archive, slowcloud_logo_url($archive));
+        if ($logoUrl !== '') {
+            $publisher['logo'] = [
+                '@type' => 'ImageObject',
+                'url' => $logoUrl,
+            ];
+        }
+        $pageNode['publisher'] = $publisher;
+        $pageNode['mainEntityOfPage'] = [
+            '@type' => 'WebPage',
+            '@id' => $context['canonical'],
+        ];
+    }
+
+    $graph[] = $pageNode;
+
+    $breadcrumbs = slowcloud_seo_breadcrumb_items($archive, $context);
+    if (!empty($breadcrumbs)) {
+        $listItems = [];
+        foreach ($breadcrumbs as $index => $item) {
+            $listItem = [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'name' => $item['name'],
+            ];
+            if (!empty($item['url'])) {
+                $listItem['item'] = $item['url'];
+            }
+            $listItems[] = $listItem;
+        }
+
+        $graph[] = [
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => $listItems,
+        ];
+    }
+
+    echo '<script type="application/ld+json">' . slowcloud_seo_json([
+        '@context' => 'https://schema.org',
+        '@graph' => $graph,
+    ]) . '</script>' . "\n";
+}
+
+function slowcloud_render_seo_meta($archive, ?array $context = null): void
+{
+    $context = $context ?? slowcloud_seo_context($archive);
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $charset = (string) ($options->charset ?? 'UTF-8');
+    $canonical = (string) $context['canonical'];
+
+    echo '<meta name="description" content="' . slowcloud_seo_escape((string) $context['description'], $charset) . '">' . "\n";
+    if (!empty($context['keywords'])) {
+        echo '<meta name="keywords" content="' . slowcloud_seo_escape(implode(',', $context['keywords']), $charset) . '">' . "\n";
+    }
+    echo '<meta name="robots" content="' . slowcloud_seo_escape((string) $context['robots'], $charset) . '">' . "\n";
+
+    if ($canonical !== '' && strpos((string) $context['robots'], 'noindex') !== 0) {
+        echo '<link rel="canonical" href="' . slowcloud_seo_escape($canonical, $charset) . '">' . "\n";
+    }
+
+    echo '<meta property="og:type" content="' . slowcloud_seo_escape((string) $context['type'], $charset) . '">' . "\n";
+    echo '<meta property="og:title" content="' . slowcloud_seo_escape((string) $context['title'], $charset) . '">' . "\n";
+    echo '<meta property="og:description" content="' . slowcloud_seo_escape((string) $context['description'], $charset) . '">' . "\n";
+    echo '<meta property="og:site_name" content="' . slowcloud_seo_escape((string) $context['site_name'], $charset) . '">' . "\n";
+    if ($canonical !== '') {
+        echo '<meta property="og:url" content="' . slowcloud_seo_escape($canonical, $charset) . '">' . "\n";
+    }
+    if ($context['image'] !== '') {
+        echo '<meta property="og:image" content="' . slowcloud_seo_escape((string) $context['image'], $charset) . '">' . "\n";
+    }
+    if ($context['type'] === 'article') {
+        if ($context['published_time'] !== '') {
+            echo '<meta property="article:published_time" content="' . slowcloud_seo_escape((string) $context['published_time'], $charset) . '">' . "\n";
+        }
+        if ($context['modified_time'] !== '') {
+            echo '<meta property="article:modified_time" content="' . slowcloud_seo_escape((string) $context['modified_time'], $charset) . '">' . "\n";
+        }
+        if ($context['author'] !== '') {
+            echo '<meta property="article:author" content="' . slowcloud_seo_escape((string) $context['author'], $charset) . '">' . "\n";
+        }
+        if (!empty($context['category']['name'])) {
+            echo '<meta property="article:section" content="' . slowcloud_seo_escape((string) $context['category']['name'], $charset) . '">' . "\n";
+        }
+        foreach ($context['keywords'] as $keyword) {
+            echo '<meta property="article:tag" content="' . slowcloud_seo_escape((string) $keyword, $charset) . '">' . "\n";
+        }
+    }
+
+    echo '<meta name="twitter:card" content="' . ($context['image'] !== '' ? 'summary_large_image' : 'summary') . '">' . "\n";
+    echo '<meta name="twitter:title" content="' . slowcloud_seo_escape((string) $context['title'], $charset) . '">' . "\n";
+    echo '<meta name="twitter:description" content="' . slowcloud_seo_escape((string) $context['description'], $charset) . '">' . "\n";
+    if ($context['image'] !== '') {
+        echo '<meta name="twitter:image" content="' . slowcloud_seo_escape((string) $context['image'], $charset) . '">' . "\n";
+    }
+    if ($canonical !== '') {
+        $domain = parse_url($canonical, PHP_URL_HOST);
+        if (is_string($domain) && $domain !== '') {
+            echo '<meta name="twitter:domain" content="' . slowcloud_seo_escape($domain, $charset) . '">' . "\n";
+        }
+    }
+
+    slowcloud_render_json_ld($archive, $context);
+}
+
+function slowcloud_render_typecho_header($archive, string $rule = ''): void
+{
+    if (!is_object($archive) || !method_exists($archive, 'header')) {
+        return;
+    }
+
+    $header = slowcloud_capture_output(static function () use ($archive, $rule): void {
+        $archive->header($rule);
+    });
+
+    $filtered = preg_replace('#<link\s+rel=(["\'])canonical\1[^>]*>\s*#i', '', $header);
+    echo $filtered ?? $header;
+}
+
 function slowcloud_upload_cdn_url($archive): string
 {
     $options = $archive->options ?? \Widget\Options::alloc();

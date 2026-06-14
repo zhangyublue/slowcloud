@@ -75,7 +75,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
                                                 <div class="slowcloud-timeline-item-body">
                                                     <?php if ($timelineItem['poster'] !== ''): ?>
                                                         <a class="slowcloud-timeline-item-poster-link" href="<?php echo htmlspecialchars($timelineItem['permalink'], ENT_QUOTES, $this->options->charset); ?>" aria-label="<?php echo htmlspecialchars($timelineItem['title'], ENT_QUOTES, $this->options->charset); ?>">
-                                                            <img class="slowcloud-timeline-item-poster" src="<?php echo htmlspecialchars($timelineItem['poster'], ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars($timelineItem['title'], ENT_QUOTES, $this->options->charset); ?>">
+                                                            <img class="slowcloud-timeline-item-poster" src="<?php echo htmlspecialchars($timelineItem['poster'], ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars($timelineItem['title'], ENT_QUOTES, $this->options->charset); ?>" loading="lazy" decoding="async">
                                                         </a>
                                                     <?php endif; ?>
 
