@@ -883,6 +883,18 @@ function themeFields($layout)
     );
     $layout->addItem($posterAlt);
 
+    $showToc = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'showToc',
+        [
+            '0' => _t('不展示'),
+            '1' => _t('展示'),
+        ],
+        '0',
+        _t('文章目录'),
+        _t('默认不展示。开启后会根据正文中的二级到四级标题自动生成文章目录。')
+    );
+    $layout->addItem($showToc);
+
     $seoTitle = new \Typecho\Widget\Helper\Form\Element\Text(
         'seoTitle',
         null,
@@ -971,6 +983,11 @@ function slowcloud_poster_alt($archive): string
     }
 
     return slowcloud_seo_clean_text((string) ($archive->title ?? slowcloud_seo_archive_title($archive)), 120);
+}
+
+function slowcloud_show_article_toc($archive): bool
+{
+    return slowcloud_field_value($archive, 'showToc') === '1';
 }
 
 function slowcloud_seo_clean_text(string $text, int $length = 160): string
@@ -1948,7 +1965,7 @@ function slowcloud_render_content($archive): void
     $html = slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
     $html = slowcloud_replace_owo_shortcodes($archive, $html);
     $enhanced = slowcloud_enhance_content_headings($html);
-    echo $enhanced['toc'] . $enhanced['html'];
+    echo (slowcloud_show_article_toc($archive) ? $enhanced['toc'] : '') . $enhanced['html'];
 }
 
 function slowcloud_render_excerpt($archive, int $length = 180, string $suffix = '...'): void
