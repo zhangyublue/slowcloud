@@ -52,6 +52,7 @@
 :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__title {
     min-width: 0;
     margin-left: 14px;
+    margin-right: auto;
     color: #6b7280;
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: 12px;
@@ -60,6 +61,31 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+:is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy {
+    flex: 0 0 auto;
+    margin-left: 12px;
+    padding: 4px 8px;
+    border: 1px solid rgba(107, 114, 128, .24);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .72);
+    color: #4b5563;
+    font-size: 12px;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+:is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:hover,
+:is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:focus-visible {
+    border-color: rgba(80, 127, 183, .45);
+    color: #315f95;
+    outline: none;
+}
+
+:is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy.is-copied {
+    border-color: rgba(40, 200, 64, .38);
+    color: #1b7f38;
 }
 
 :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window pre[class*="language-"],
@@ -148,6 +174,24 @@ html[data-slowcloud-editor-theme="dark"] :is(.slowcloud-entry-content, .slowclou
 :root[data-slowcloud-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__title,
 html[data-slowcloud-editor-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__title {
     color: #9ca3af;
+}
+
+:root[data-slowcloud-code-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy,
+:root[data-slowcloud-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy,
+html[data-slowcloud-editor-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy {
+    border-color: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .06);
+    color: #cbd5e1;
+}
+
+:root[data-slowcloud-code-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:hover,
+:root[data-slowcloud-code-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:focus-visible,
+:root[data-slowcloud-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:hover,
+:root[data-slowcloud-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:focus-visible,
+html[data-slowcloud-editor-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:hover,
+html[data-slowcloud-editor-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window__copy:focus-visible {
+    border-color: rgba(148, 184, 228, .36);
+    color: #f8fafc;
 }
 
 :root[data-slowcloud-code-theme="dark"] :is(.slowcloud-entry-content, .slowcloud-editor-preview) .slowcloud-code-window pre[class*="language-"].line-numbers .line-numbers-rows,

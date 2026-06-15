@@ -654,6 +654,12 @@ function themeConfigHandle($settings, $isInit): void
 
 function themeInit($archive): void
 {
+    if (slowcloud_is_robots_request($archive)) {
+        $archive->response->setStatus(200);
+        $archive->setThemeFile('robots.php');
+        return;
+    }
+
     if (!slowcloud_sitemap_enabled($archive) || !slowcloud_is_sitemap_request($archive)) {
         return;
     }
@@ -680,6 +686,20 @@ function slowcloud_is_sitemap_request($archive): bool
     }
 
     return preg_match('#/(?:index\.php/)?sitemap\.xml/?$#i', $path) === 1;
+}
+
+function slowcloud_is_robots_request($archive): bool
+{
+    if (!is_object($archive) || !isset($archive->request) || !method_exists($archive->request, 'getRequestUri')) {
+        return false;
+    }
+
+    $path = parse_url((string) $archive->request->getRequestUri(), PHP_URL_PATH);
+    if (!is_string($path)) {
+        return false;
+    }
+
+    return preg_match('#/(?:index\.php/)?robots\.txt/?$#i', $path) === 1;
 }
 
 function slowcloud_sitemap_xml_escape(string $value): string
@@ -778,6 +798,29 @@ function slowcloud_render_sitemap($archive): void
     }
 
     echo "</urlset>\n";
+}
+
+function slowcloud_render_robots($archive): void
+{
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=UTF-8');
+    }
+
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $sitemapUrl = slowcloud_seo_normalize_site_url($archive, \Typecho\Common::url('sitemap.xml', (string) ($options->index ?? $options->siteUrl ?? '')));
+
+    echo "User-agent: *\n";
+    echo "Disallow: /admin/\n";
+    echo "Disallow: /install/\n";
+    echo "Disallow: /var/\n";
+    echo "Disallow: /usr/\n";
+    echo "Disallow: /action/\n";
+    echo "Disallow: /search/\n";
+    echo "Allow: /usr/uploads/\n";
+    echo "Allow: /usr/themes/slowcloud/assets/\n";
+    if (slowcloud_sitemap_enabled($archive)) {
+        echo "\nSitemap: " . $sitemapUrl . "\n";
+    }
 }
 
 function postMeta(\Widget\Archive $archive, string $metaType = 'archive')
@@ -1792,12 +1835,120 @@ function slowcloud_rewrite_upload_html($archive, string $html): string
     );
 }
 
+function slowcloud_heading_anchor(string $text, array &$used): string
+{
+    $text = slowcloud_seo_clean_text($text, 80);
+    $slug = preg_replace('/[^\p{L}\p{N}]+/u', '-', $text);
+    $slug = trim((string) $slug, '-');
+    if ($slug === '') {
+        $slug = 'section';
+    }
+
+    $base = strtolower($slug);
+    $count = $used[$base] ?? 0;
+    $used[$base] = $count + 1;
+
+    return $count > 0 ? $base . '-' . ($count + 1) : $base;
+}
+
+function slowcloud_build_toc_html(array $items): string
+{
+    if (count($items) < 2) {
+        return '';
+    }
+
+    $html = '<nav class="slowcloud-article-toc" aria-label="' . htmlspecialchars(_t('文章目录'), ENT_QUOTES, 'UTF-8') . '">';
+    $html .= '<div class="slowcloud-article-toc__title">' . htmlspecialchars(_t('文章目录'), ENT_QUOTES, 'UTF-8') . '</div>';
+    $html .= '<ol class="slowcloud-article-toc__list">';
+
+    foreach ($items as $item) {
+        $level = max(2, min(4, (int) $item['level']));
+        $html .= '<li class="slowcloud-article-toc__item slowcloud-article-toc__item--level-' . $level . '">';
+        $html .= '<a href="#' . htmlspecialchars((string) $item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) $item['text'], ENT_QUOTES, 'UTF-8') . '</a>';
+        $html .= '</li>';
+    }
+
+    $html .= '</ol></nav>';
+    return $html;
+}
+
+function slowcloud_enhance_content_headings(string $html): array
+{
+    if ($html === '' || !class_exists('\DOMDocument')) {
+        return [
+            'html' => $html,
+            'toc' => '',
+        ];
+    }
+
+    $document = new \DOMDocument('1.0', 'UTF-8');
+    $previous = libxml_use_internal_errors(true);
+    $loaded = $document->loadHTML('<?xml encoding="UTF-8"><div id="slowcloud-content-root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    if (!$loaded) {
+        return [
+            'html' => $html,
+            'toc' => '',
+        ];
+    }
+
+    $xpath = new \DOMXPath($document);
+    $headings = $xpath->query('//*[@id="slowcloud-content-root"]//*[self::h2 or self::h3 or self::h4]');
+    $items = [];
+    $used = [];
+
+    if ($headings) {
+        foreach ($headings as $heading) {
+            if (!$heading instanceof \DOMElement) {
+                continue;
+            }
+
+            $text = trim((string) $heading->textContent);
+            if ($text === '') {
+                continue;
+            }
+
+            $id = trim((string) $heading->getAttribute('id'));
+            if ($id === '') {
+                $id = slowcloud_heading_anchor($text, $used);
+                $heading->setAttribute('id', $id);
+            } else {
+                $used[$id] = ($used[$id] ?? 0) + 1;
+            }
+
+            $heading->setAttribute('tabindex', '-1');
+            $items[] = [
+                'level' => (int) substr($heading->tagName, 1),
+                'id' => $id,
+                'text' => $text,
+            ];
+        }
+    }
+
+    $root = $document->getElementById('slowcloud-content-root');
+    $body = '';
+    if ($root) {
+        foreach ($root->childNodes as $child) {
+            $body .= $document->saveHTML($child);
+        }
+    }
+
+    return [
+        'html' => $body !== '' ? $body : $html,
+        'toc' => slowcloud_build_toc_html($items),
+    ];
+}
+
 function slowcloud_render_content($archive): void
 {
     ob_start();
     $archive->content();
     $html = slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
-    echo slowcloud_replace_owo_shortcodes($archive, $html);
+    $html = slowcloud_replace_owo_shortcodes($archive, $html);
+    $enhanced = slowcloud_enhance_content_headings($html);
+    echo $enhanced['toc'] . $enhanced['html'];
 }
 
 function slowcloud_render_excerpt($archive, int $length = 180, string $suffix = '...'): void
