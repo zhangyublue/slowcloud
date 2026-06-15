@@ -990,6 +990,32 @@ function slowcloud_show_article_toc($archive): bool
     return slowcloud_field_value($archive, 'showToc') === '1';
 }
 
+function slowcloud_post_tags($archive, string $split = ', ', ?string $default = null): void
+{
+    $tags = $archive->tags ?? [];
+    if (empty($tags) || !is_array($tags)) {
+        echo $default ?? '';
+        return;
+    }
+
+    $charset = (string) (($archive->options->charset ?? null) ?: 'UTF-8');
+    $items = [];
+    foreach ($tags as $tag) {
+        $name = trim((string) ($tag['name'] ?? ''));
+        $permalink = trim((string) ($tag['permalink'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+
+        $label = '#' . htmlspecialchars($name, ENT_QUOTES, $charset);
+        $items[] = $permalink !== ''
+            ? '<a href="' . htmlspecialchars($permalink, ENT_QUOTES, $charset) . '">' . $label . '</a>'
+            : $label;
+    }
+
+    echo !empty($items) ? implode($split, $items) : ($default ?? '');
+}
+
 function slowcloud_seo_clean_text(string $text, int $length = 160): string
 {
     $text = html_entity_decode(strip_tags($text), ENT_QUOTES, 'UTF-8');

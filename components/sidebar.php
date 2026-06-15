@@ -26,7 +26,9 @@
                         href="<?php $tags->permalink(); ?>"
                         class="<?php echo $tagCount >= 20 ? 'is-lg' : ($tagCount >= 8 ? 'is-md' : 'is-sm'); ?>"
                     >
-                        <?php $tags->name(); ?>
+                        <span class="slowcloud-tag-prefix" aria-hidden="true">#</span>
+                        <span class="slowcloud-tag-name"><?php $tags->name(); ?></span>
+                        <span class="slowcloud-tag-count"><?php echo $tagCount; ?></span>
                     </a>
                 <?php endwhile; ?>
             <?php else: ?>

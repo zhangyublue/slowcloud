@@ -29,7 +29,7 @@
             </div>
 
             <footer class="slowcloud-article-footer">
-                <p class="slowcloud-tag-row"><?php _e('标签'); ?>: <?php $this->tags(', ', true, _t('暂无标签')); ?></p>
+                <p class="slowcloud-tag-row"><?php _e('标签'); ?>: <?php slowcloud_post_tags($this, ', ', _t('暂无标签')); ?></p>
             </footer>
         </article>
 

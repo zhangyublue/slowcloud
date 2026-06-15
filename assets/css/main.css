@@ -976,7 +976,7 @@ img {
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 8px;
+    gap: 8px;
     padding: 14px 16px;
     background: var(--slowcloud-sidebar-list-bg);
     border-radius: var(--slowcloud-radius-sm);
@@ -984,13 +984,46 @@ img {
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud a {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
+    gap: 2px;
+    min-height: 26px;
+    padding: 2px 2px 2px 4px;
     color: var(--slowcloud-muted);
-    line-height: 1.2;
+    background: rgba(122, 166, 216, 0.08);
+    border: 1px solid var(--slowcloud-line);
+    border-radius: 4px;
+    transition:
+        color var(--slowcloud-motion-fast),
+        background-color var(--slowcloud-motion-fast),
+        border-color var(--slowcloud-motion-fast),
+        transform var(--slowcloud-motion-fast);
 }
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud a:hover {
     color: var(--slowcloud-text);
+    border-color: var(--slowcloud-accent);
+    transform: translateY(-1px);
+}
+
+.slowcloud-sidebar-card-tags .slowcloud-tag-prefix {
+    color: var(--slowcloud-accent-deep);
+    font-weight: 700;
+}
+
+.slowcloud-sidebar-card-tags .slowcloud-tag-name {
+    max-width: 9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.slowcloud-sidebar-card-tags .slowcloud-tag-count {
+    flex: 0 0 auto;
+    margin-left: 0px;
+    color: var(--slowcloud-muted);
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1;
 }
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud-empty {
@@ -999,11 +1032,11 @@ img {
 }
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud .is-lg {
-    font-size: 0.96rem;
+    font-size: 0.9rem;
 }
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud .is-md {
-    font-size: 0.86rem;
+    font-size: 0.84rem;
 }
 
 .slowcloud-sidebar-card-tags .slowcloud-tag-cloud .is-sm {
