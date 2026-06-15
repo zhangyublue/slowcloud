@@ -42,7 +42,7 @@ $renderAuthorLinks = function (array $links): void {
 <?php $socialLinks = slowcloud_social_links($this); ?>
 <?php if (!empty($socialLinks)): ?>
     <section class="slowcloud-home-author-links slowcloud-home-author-links-platforms" aria-label="<?php _e('社交平台'); ?>">
-        <h3 class="slowcloud-home-author-links-title"><?php _e('其他平台'); ?></h3>
+        <h3 class="slowcloud-home-author-links-title"><?php _e('社交平台'); ?></h3>
         <ul class="slowcloud-home-author-links-list slowcloud-home-author-links-list-social">
             <?php $renderAuthorLinks($socialLinks); ?>
         </ul>
