@@ -21,6 +21,9 @@
     <title><?php echo slowcloud_seo_escape((string) $slowcloudSeoContext['title'], $this->options->charset); ?></title>
     <link rel="icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
     <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($slowcloudLogoUrl, ENT_QUOTES, $this->options->charset); ?>">
+    <?php if (slowcloud_sitemap_enabled($this)): ?>
+        <link rel="sitemap" type="application/xml" href="<?php echo htmlspecialchars(slowcloud_seo_normalize_site_url($this, \Typecho\Common::url('sitemap.xml', (string) $this->options->index)), ENT_QUOTES, $this->options->charset); ?>">
+    <?php endif; ?>
     <?php slowcloud_render_seo_meta($this, $slowcloudSeoContext); ?>
 
     <link rel="stylesheet" href="<?php $this->options->themeUrl('style.css'); ?>">

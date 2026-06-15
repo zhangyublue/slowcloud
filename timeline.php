@@ -75,7 +75,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
                                                 <div class="slowcloud-timeline-item-body">
                                                     <?php if ($timelineItem['poster'] !== ''): ?>
                                                         <a class="slowcloud-timeline-item-poster-link" href="<?php echo htmlspecialchars($timelineItem['permalink'], ENT_QUOTES, $this->options->charset); ?>" aria-label="<?php echo htmlspecialchars($timelineItem['title'], ENT_QUOTES, $this->options->charset); ?>">
-                                                            <img class="slowcloud-timeline-item-poster" src="<?php echo htmlspecialchars($timelineItem['poster'], ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars($timelineItem['title'], ENT_QUOTES, $this->options->charset); ?>" loading="lazy" decoding="async">
+                                                            <img class="slowcloud-timeline-item-poster" src="<?php echo htmlspecialchars($timelineItem['poster'], ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars($timelineItem['poster_alt'] ?: $timelineItem['title'], ENT_QUOTES, $this->options->charset); ?>" loading="lazy" decoding="async"<?php echo slowcloud_image_dimension_attrs($this, $timelineItem['poster'], $this->options->charset); ?><?php echo slowcloud_image_srcset_attrs($this, $timelineItem['poster'], $this->options->charset, '(max-width: 768px) 96px, 120px'); ?>>
                                                         </a>
                                                     <?php endif; ?>
 

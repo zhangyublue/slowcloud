@@ -564,6 +564,18 @@ function themeConfig($form)
     $uploadCdnUrl->addRule('url', _t('请填写正确的 URL 地址'));
     $form->addInput(slowcloud_assign_settings_group($uploadCdnUrl, 'content-delivery', '内容分发设置'));
 
+    $sitemapEnabled = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'sitemapEnabled',
+        [
+            '1' => _t('启用'),
+            '0' => _t('关闭'),
+        ],
+        '1',
+        _t('Sitemap'),
+        _t('启用后可通过 /sitemap.xml 或 /index.php/sitemap.xml 访问站点地图，包含首页、文章页和独立页面。')
+    );
+    $form->addInput(slowcloud_assign_settings_group($sitemapEnabled, 'seo-options', 'SEO 设置'));
+
     $icpBeian = new \Typecho\Widget\Helper\Form\Element\Text(
         'icpBeian',
         null,
@@ -640,6 +652,134 @@ function themeConfigHandle($settings, $isInit): void
     }
 }
 
+function themeInit($archive): void
+{
+    if (!slowcloud_sitemap_enabled($archive) || !slowcloud_is_sitemap_request($archive)) {
+        return;
+    }
+
+    $archive->response->setStatus(200);
+    $archive->setThemeFile('sitemap.php');
+}
+
+function slowcloud_sitemap_enabled($archive): bool
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return (string) ($options->sitemapEnabled ?? '1') !== '0';
+}
+
+function slowcloud_is_sitemap_request($archive): bool
+{
+    if (!is_object($archive) || !isset($archive->request) || !method_exists($archive->request, 'getRequestUri')) {
+        return false;
+    }
+
+    $path = parse_url((string) $archive->request->getRequestUri(), PHP_URL_PATH);
+    if (!is_string($path)) {
+        return false;
+    }
+
+    return preg_match('#/(?:index\.php/)?sitemap\.xml/?$#i', $path) === 1;
+}
+
+function slowcloud_sitemap_xml_escape(string $value): string
+{
+    return htmlspecialchars($value, ENT_XML1 | ENT_COMPAT, 'UTF-8');
+}
+
+function slowcloud_sitemap_lastmod($value): string
+{
+    $timestamp = (int) $value;
+    return $timestamp > 0 ? gmdate('c', $timestamp) : gmdate('c');
+}
+
+function slowcloud_sitemap_entries($archive): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $homeLastmod = 0;
+    $contentEntries = [];
+
+    \Widget\Contents\Page\Rows::alloc()->to($pages);
+    while ($pages->next()) {
+        $modified = (int) ($pages->modified ?? $pages->created ?? 0);
+        $homeLastmod = max($homeLastmod, $modified);
+        $contentEntries[] = [
+            'loc' => slowcloud_seo_normalize_site_url($archive, (string) $pages->permalink),
+            'lastmod' => slowcloud_sitemap_lastmod($modified),
+            'changefreq' => 'monthly',
+            'priority' => '0.8',
+        ];
+    }
+
+    \Widget\Contents\Post\Recent::alloc(['pageSize' => 10000])->to($posts);
+    while ($posts->next()) {
+        $modified = (int) ($posts->modified ?? $posts->created ?? 0);
+        $homeLastmod = max($homeLastmod, $modified);
+        $entry = [
+            'loc' => slowcloud_seo_normalize_site_url($archive, (string) $posts->permalink),
+            'lastmod' => slowcloud_sitemap_lastmod($modified),
+            'changefreq' => 'weekly',
+            'priority' => '0.7',
+        ];
+
+        $poster = slowcloud_poster($posts);
+        if ($poster !== '') {
+            $entry['image'] = [
+                'loc' => slowcloud_seo_absolute_url($archive, $poster),
+                'title' => (string) $posts->title,
+                'caption' => slowcloud_poster_alt($posts),
+            ];
+        }
+
+        $contentEntries[] = $entry;
+    }
+
+    $entries = [
+        [
+            'loc' => slowcloud_seo_absolute_url($archive, (string) ($options->siteUrl ?? '')),
+            'lastmod' => slowcloud_sitemap_lastmod($homeLastmod),
+            'changefreq' => 'daily',
+            'priority' => '1.0',
+        ],
+    ];
+
+    return array_merge($entries, $contentEntries);
+}
+
+function slowcloud_render_sitemap($archive): void
+{
+    if (!headers_sent()) {
+        header('Content-Type: application/xml; charset=UTF-8');
+    }
+
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+
+    foreach (slowcloud_sitemap_entries($archive) as $entry) {
+        echo "  <url>\n";
+        echo '    <loc>' . slowcloud_sitemap_xml_escape((string) $entry['loc']) . "</loc>\n";
+        echo '    <lastmod>' . slowcloud_sitemap_xml_escape((string) $entry['lastmod']) . "</lastmod>\n";
+        echo '    <changefreq>' . slowcloud_sitemap_xml_escape((string) $entry['changefreq']) . "</changefreq>\n";
+        echo '    <priority>' . slowcloud_sitemap_xml_escape((string) $entry['priority']) . "</priority>\n";
+
+        if (!empty($entry['image']['loc'])) {
+            echo "    <image:image>\n";
+            echo '      <image:loc>' . slowcloud_sitemap_xml_escape((string) $entry['image']['loc']) . "</image:loc>\n";
+            if (!empty($entry['image']['title'])) {
+                echo '      <image:title>' . slowcloud_sitemap_xml_escape((string) $entry['image']['title']) . "</image:title>\n";
+            }
+            if (!empty($entry['image']['caption'])) {
+                echo '      <image:caption>' . slowcloud_sitemap_xml_escape((string) $entry['image']['caption']) . "</image:caption>\n";
+            }
+            echo "    </image:image>\n";
+        }
+
+        echo "  </url>\n";
+    }
+
+    echo "</urlset>\n";
+}
+
 function postMeta(\Widget\Archive $archive, string $metaType = 'archive')
 {
     $titleTag = $metaType === 'archive' ? 'h2' : 'h1';
@@ -690,6 +830,54 @@ function themeFields($layout)
         _t('填写图片 URL，用于文章卡片和文章详情页顶部展示')
     );
     $layout->addItem($poster->addRule('url', _t('请填写正确的 URL 地址')));
+
+    $posterAlt = new \Typecho\Widget\Helper\Form\Element\Text(
+        'posterAlt',
+        null,
+        null,
+        _t('文章海报 Alt 文本'),
+        _t('可选。用于文章封面图片的 alt、结构化数据和图片 SEO；不填写时使用文章标题。')
+    );
+    $layout->addItem($posterAlt);
+
+    $seoTitle = new \Typecho\Widget\Helper\Form\Element\Text(
+        'seoTitle',
+        null,
+        null,
+        _t('SEO 标题'),
+        _t('可选。用于 title、Open Graph 和结构化数据 headline；不填写时使用文章标题。')
+    );
+    $layout->addItem($seoTitle);
+
+    $seoDescription = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'seoDescription',
+        null,
+        null,
+        _t('SEO 描述'),
+        _t('可选。建议 80-160 字，用于 description、Open Graph 和结构化数据；不填写时使用文章摘要。')
+    );
+    $layout->addItem($seoDescription);
+
+    $seoCanonical = new \Typecho\Widget\Helper\Form\Element\Text(
+        'seoCanonical',
+        null,
+        null,
+        _t('Canonical 地址'),
+        _t('可选。仅在需要指定规范 URL 时填写，留空时自动使用当前文章永久链接。')
+    );
+    $layout->addItem($seoCanonical->addRule('url', _t('请填写正确的 URL 地址')));
+
+    $seoNoindex = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'seoNoindex',
+        [
+            '0' => _t('允许收录'),
+            '1' => _t('不收录'),
+        ],
+        '0',
+        _t('搜索引擎收录'),
+        _t('选择“不收录”时会输出 noindex,follow，适合临时页或不希望进入搜索结果的内容。')
+    );
+    $layout->addItem($seoNoindex);
 }
 
 function slowcloud_intro($archive): string
@@ -717,6 +905,29 @@ function slowcloud_poster($archive): string
     }
 
     return '';
+}
+
+function slowcloud_field_value($archive, string $name): string
+{
+    $value = trim((string) ($archive->fields->{$name} ?? ''));
+    if ($value !== '') {
+        return $value;
+    }
+
+    $requestFields = \Typecho\Request::getInstance()->getArray('fields');
+    return is_array($requestFields) && isset($requestFields[$name])
+        ? trim((string) $requestFields[$name])
+        : '';
+}
+
+function slowcloud_poster_alt($archive): string
+{
+    $alt = slowcloud_field_value($archive, 'posterAlt');
+    if ($alt !== '') {
+        return slowcloud_seo_clean_text($alt, 120);
+    }
+
+    return slowcloud_seo_clean_text((string) ($archive->title ?? slowcloud_seo_archive_title($archive)), 120);
 }
 
 function slowcloud_seo_clean_text(string $text, int $length = 160): string
@@ -910,11 +1121,25 @@ function slowcloud_seo_current_url($archive): string
     return slowcloud_seo_strip_url_query(slowcloud_seo_normalize_site_url($archive, $url));
 }
 
+function slowcloud_seo_canonical($archive): string
+{
+    $customCanonical = slowcloud_field_value($archive, 'seoCanonical');
+    if ($customCanonical !== '') {
+        return slowcloud_seo_strip_url_query(slowcloud_seo_normalize_site_url($archive, $customCanonical));
+    }
+
+    return slowcloud_seo_current_url($archive);
+}
+
 function slowcloud_seo_description($archive): string
 {
     $description = '';
 
     if (slowcloud_seo_is($archive, 'single')) {
+        $description = slowcloud_field_value($archive, 'seoDescription');
+    }
+
+    if ($description === '' && slowcloud_seo_is($archive, 'single')) {
         $description = trim((string) ($archive->plainExcerpt ?? ''));
     }
 
@@ -932,6 +1157,110 @@ function slowcloud_seo_description($archive): string
     }
 
     return slowcloud_seo_clean_text($description, 160);
+}
+
+function slowcloud_seo_local_image_file($archive, string $url): string
+{
+    $url = slowcloud_seo_absolute_url($archive, $url);
+    $urlParts = parse_url($url);
+    if (!is_array($urlParts) || empty($urlParts['path'])) {
+        return '';
+    }
+
+    $siteUrl = slowcloud_seo_site_url($archive);
+    $siteParts = $siteUrl !== '' ? parse_url($siteUrl) : false;
+    $requestHostKey = slowcloud_seo_request_host_key();
+    $urlHostKey = slowcloud_seo_host_key($urlParts);
+    $siteHostKey = is_array($siteParts) ? slowcloud_seo_host_key($siteParts) : '';
+
+    if ($urlHostKey !== '' && $urlHostKey !== $siteHostKey && $urlHostKey !== $requestHostKey) {
+        return '';
+    }
+
+    $path = $urlParts['path'];
+    if (is_array($siteParts) && !empty($siteParts['path'])) {
+        $sitePath = rtrim((string) $siteParts['path'], '/');
+        if ($sitePath !== '' && strpos($path, $sitePath . '/') === 0) {
+            $path = substr($path, strlen($sitePath));
+        }
+    }
+
+    $file = __TYPECHO_ROOT_DIR__ . '/' . ltrim(rawurldecode($path), '/');
+    return is_file($file) ? $file : '';
+}
+
+function slowcloud_image_dimensions($archive, string $url): array
+{
+    static $cache = [];
+
+    $url = trim($url);
+    if ($url === '') {
+        return [];
+    }
+
+    if (isset($cache[$url])) {
+        return $cache[$url];
+    }
+
+    $file = slowcloud_seo_local_image_file($archive, $url);
+    if ($file === '' || !function_exists('getimagesize')) {
+        return $cache[$url] = [];
+    }
+
+    $size = @getimagesize($file);
+    if (!is_array($size) || empty($size[0]) || empty($size[1])) {
+        return $cache[$url] = [];
+    }
+
+    return $cache[$url] = [
+        'width' => (int) $size[0],
+        'height' => (int) $size[1],
+    ];
+}
+
+function slowcloud_image_dimension_attrs($archive, string $url, string $charset): string
+{
+    $dimensions = slowcloud_image_dimensions($archive, $url);
+    if (empty($dimensions['width']) || empty($dimensions['height'])) {
+        return '';
+    }
+
+    return ' width="' . slowcloud_seo_escape((string) $dimensions['width'], $charset) . '"'
+        . ' height="' . slowcloud_seo_escape((string) $dimensions['height'], $charset) . '"';
+}
+
+function slowcloud_image_srcset_attrs($archive, string $url, string $charset, string $sizes = ''): string
+{
+    $dimensions = slowcloud_image_dimensions($archive, $url);
+    if (empty($dimensions['width'])) {
+        return '';
+    }
+
+    $attrs = ' srcset="' . slowcloud_seo_escape($url . ' ' . (int) $dimensions['width'] . 'w', $charset) . '"';
+    if ($sizes !== '') {
+        $attrs .= ' sizes="' . slowcloud_seo_escape($sizes, $charset) . '"';
+    }
+
+    return $attrs;
+}
+
+function slowcloud_seo_image_object($archive, string $url, string $alt = ''): array
+{
+    $image = [
+        '@type' => 'ImageObject',
+        'url' => $url,
+    ];
+
+    $dimensions = slowcloud_image_dimensions($archive, $url);
+    if (!empty($dimensions['width']) && !empty($dimensions['height'])) {
+        $image['width'] = $dimensions['width'];
+        $image['height'] = $dimensions['height'];
+    }
+    if ($alt !== '') {
+        $image['caption'] = $alt;
+    }
+
+    return $image;
 }
 
 function slowcloud_seo_image($archive): string
@@ -979,6 +1308,16 @@ function slowcloud_seo_term_names($terms): array
     return array_values($names);
 }
 
+function slowcloud_seo_word_count($archive): int
+{
+    if (!slowcloud_seo_is($archive, 'single')) {
+        return 0;
+    }
+
+    $text = slowcloud_seo_clean_text((string) ($archive->text ?? ''), 100000);
+    return $text !== '' ? \Typecho\Common::strLen($text) : 0;
+}
+
 function slowcloud_seo_primary_category_data($archive): array
 {
     $categories = $archive->categories ?? [];
@@ -1012,12 +1351,16 @@ function slowcloud_seo_primary_category_data($archive): array
 function slowcloud_seo_robots($archive): string
 {
     $themeFile = slowcloud_safe_theme_file($archive);
+    $customNoindex = slowcloud_field_value($archive, 'seoNoindex') === '1';
 
     if (
+        $customNoindex
+        || (
         $themeFile === '404.php'
         || slowcloud_seo_is($archive, 'search')
         || slowcloud_seo_is($archive, 'feed')
         || isset($_GET['preview'])
+        )
     ) {
         return 'noindex,follow';
     }
@@ -1050,11 +1393,15 @@ function slowcloud_seo_context($archive): array
         $titleSuffix = $siteName !== '' ? $siteName : 'slowcloud';
     }
 
-    $archiveTitle = slowcloud_seo_archive_title($archive);
     $isIndex = slowcloud_seo_is($archive, 'index') || slowcloud_seo_is($archive, 'front');
     $isPost = slowcloud_seo_is($archive, 'post');
     $isPage = slowcloud_seo_is($archive, 'page');
     $isSingle = slowcloud_seo_is($archive, 'single');
+    $archiveTitle = slowcloud_seo_archive_title($archive);
+    $customTitle = $isSingle ? slowcloud_seo_clean_text(slowcloud_field_value($archive, 'seoTitle'), 120) : '';
+    if ($customTitle !== '') {
+        $archiveTitle = $customTitle;
+    }
 
     $title = $archiveTitle !== '' && !$isIndex
         ? $archiveTitle . ' - ' . $titleSuffix
@@ -1078,18 +1425,25 @@ function slowcloud_seo_context($archive): array
         $keywords = [$archiveTitle];
     }
 
+    $image = slowcloud_seo_image($archive);
+    $imageAlt = $isSingle ? slowcloud_poster_alt($archive) : '';
+    $imageObject = $image !== '' ? slowcloud_seo_image_object($archive, $image, $imageAlt) : [];
+
     return [
         'site_name' => $siteName !== '' ? $siteName : $titleSuffix,
         'title' => $title,
         'page_title' => $archiveTitle,
         'description' => slowcloud_seo_description($archive),
-        'canonical' => slowcloud_seo_current_url($archive),
-        'image' => slowcloud_seo_image($archive),
+        'canonical' => slowcloud_seo_canonical($archive),
+        'image' => $image,
+        'image_alt' => $imageAlt,
+        'image_object' => $imageObject,
         'type' => $isPost ? 'article' : 'website',
         'robots' => slowcloud_seo_robots($archive),
         'author' => $authorName,
         'published_time' => $isSingle ? slowcloud_seo_datetime($archive->created ?? 0) : '',
         'modified_time' => $isSingle ? slowcloud_seo_datetime($archive->modified ?? ($archive->created ?? 0)) : '',
+        'word_count' => slowcloud_seo_word_count($archive),
         'keywords' => $keywords,
         'category' => slowcloud_seo_primary_category_data($archive),
         'is_index' => $isIndex,
@@ -1182,7 +1536,10 @@ function slowcloud_render_json_ld($archive, array $context): void
         $pageNode['description'] = $context['description'];
     }
     if ($context['image'] !== '') {
-        $pageNode['image'] = [$context['image']];
+        $pageNode['image'] = !empty($context['image_object'])
+            ? [$context['image_object']]
+            : [$context['image']];
+        $pageNode['thumbnailUrl'] = $context['image'];
     }
     if (!empty($context['is_post'])) {
         if ($context['published_time'] !== '') {
@@ -1197,6 +1554,17 @@ function slowcloud_render_json_ld($archive, array $context): void
                 'name' => $context['author'],
             ];
         }
+        if (!empty($context['category']['name'])) {
+            $pageNode['articleSection'] = $context['category']['name'];
+        }
+        if (!empty($context['keywords'])) {
+            $pageNode['keywords'] = implode(',', $context['keywords']);
+        }
+        if (!empty($context['word_count'])) {
+            $pageNode['wordCount'] = (int) $context['word_count'];
+        }
+        $pageNode['inLanguage'] = 'zh-CN';
+        $pageNode['isAccessibleForFree'] = true;
 
         $publisher = [
             '@type' => 'Organization',
@@ -1204,10 +1572,7 @@ function slowcloud_render_json_ld($archive, array $context): void
         ];
         $logoUrl = slowcloud_seo_absolute_url($archive, slowcloud_logo_url($archive));
         if ($logoUrl !== '') {
-            $publisher['logo'] = [
-                '@type' => 'ImageObject',
-                'url' => $logoUrl,
-            ];
+            $publisher['logo'] = slowcloud_seo_image_object($archive, $logoUrl);
         }
         $pageNode['publisher'] = $publisher;
         $pageNode['mainEntityOfPage'] = [
@@ -1271,6 +1636,13 @@ function slowcloud_render_seo_meta($archive, ?array $context = null): void
     }
     if ($context['image'] !== '') {
         echo '<meta property="og:image" content="' . slowcloud_seo_escape((string) $context['image'], $charset) . '">' . "\n";
+        if (!empty($context['image_object']['width']) && !empty($context['image_object']['height'])) {
+            echo '<meta property="og:image:width" content="' . slowcloud_seo_escape((string) $context['image_object']['width'], $charset) . '">' . "\n";
+            echo '<meta property="og:image:height" content="' . slowcloud_seo_escape((string) $context['image_object']['height'], $charset) . '">' . "\n";
+        }
+        if (!empty($context['image_alt'])) {
+            echo '<meta property="og:image:alt" content="' . slowcloud_seo_escape((string) $context['image_alt'], $charset) . '">' . "\n";
+        }
     }
     if ($context['type'] === 'article') {
         if ($context['published_time'] !== '') {
@@ -1877,6 +2249,7 @@ function slowcloud_timeline_data(): array
         $created = (int) $posts->created;
         $summary = slowcloud_timeline_summary_text($posts);
         $poster = slowcloud_poster($posts);
+        $posterAlt = slowcloud_poster_alt($posts);
         $years[$yearKey]['months'][$monthKey]['items'][] = [
             'title' => (string) $posts->title,
             'permalink' => (string) $posts->permalink,
@@ -1886,6 +2259,7 @@ function slowcloud_timeline_data(): array
             'views' => slowcloud_views($posts),
             'summary' => $summary,
             'poster' => $poster,
+            'poster_alt' => $posterAlt,
         ];
 
         $stats['total']++;
