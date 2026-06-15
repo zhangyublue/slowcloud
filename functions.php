@@ -56,9 +56,257 @@ function slowcloud_theme_settings_enhancer(): \Typecho\Widget\Helper\Form\Elemen
 .slowcloud-settings-group-body > .typecho-option {
     margin-top: 12px;
 }
+.slowcloud-link-list-builder {
+    display: grid;
+    gap: 12px;
+    margin-top: 10px;
+}
+.slowcloud-link-list-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1fr) minmax(220px, 1.4fr) auto;
+    gap: 10px;
+    align-items: end;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+.slowcloud-link-list-fields label {
+    display: grid;
+    gap: 5px;
+    color: #475569;
+    font-size: 12px;
+}
+.slowcloud-link-list-fields {
+    display: contents;
+}
+.slowcloud-link-list-fields input,
+.slowcloud-link-list-fields textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+.slowcloud-link-list-fields textarea {
+    min-height: 36px;
+    height: 36px;
+    font-family: Menlo, Consolas, monospace;
+    resize: vertical;
+}
+.slowcloud-link-list-actions {
+    display: flex;
+    justify-content: flex-start;
+}
+.slowcloud-link-list-remove {
+    white-space: nowrap;
+}
+.slowcloud-link-list-storage {
+    display: none;
+}
+@media (max-width: 782px) {
+    .slowcloud-link-list-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+}
 </style>
 <script>
 (function () {
+    function splitSlowcloudLinkLine(line) {
+        var first = line.indexOf('|');
+        var second = first >= 0 ? line.indexOf('|', first + 1) : -1;
+        if (first < 0 || second < 0) {
+            return null;
+        }
+
+        return [
+            line.slice(0, first).trim(),
+            line.slice(first + 1, second).trim(),
+            line.slice(second + 1).trim()
+        ];
+    }
+
+    function normalizeSlowcloudLinkEntry(name, second, third) {
+        var svgInSecond = second.toLowerCase().indexOf('<svg') >= 0;
+        return {
+            name: name || '',
+            url: svgInSecond ? third : second,
+            svg: svgInSecond ? second : third
+        };
+    }
+
+    function parseSlowcloudLegacyLinkList(value) {
+        var entries = [];
+        var lines = value.split(/\r\n|\r|\n/);
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line || line.indexOf('|') < 0) {
+                continue;
+            }
+
+            var parts = splitSlowcloudLinkLine(line);
+            if (parts) {
+                entries.push(normalizeSlowcloudLinkEntry(parts[0], parts[1], parts[2]));
+                continue;
+            }
+
+            var pair = line.split('|');
+            var svgLines = [];
+            while (i + 1 < lines.length) {
+                var nextLine = lines[i + 1].trim();
+                if (!nextLine) {
+                    i++;
+                    if (svgLines.length && svgLines.join('').toLowerCase().indexOf('</svg>') >= 0) {
+                        break;
+                    }
+                    continue;
+                }
+
+                if (svgLines.length && nextLine.indexOf('|') >= 0 && svgLines.join('').toLowerCase().indexOf('</svg>') >= 0) {
+                    break;
+                }
+
+                svgLines.push(nextLine);
+                i++;
+                if (nextLine.toLowerCase().indexOf('</svg>') >= 0) {
+                    break;
+                }
+            }
+
+            if (pair[0] && pair[1] && svgLines.length) {
+                entries.push({
+                    name: pair[0].trim(),
+                    url: pair.slice(1).join('|').trim(),
+                    svg: svgLines.join('')
+                });
+            }
+        }
+
+        return entries;
+    }
+
+    function parseSlowcloudLinkListValue(value) {
+        value = (value || '').trim();
+        if (!value) {
+            return [];
+        }
+
+        try {
+            var parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                return parsed.map(function (item) {
+                    return {
+                        name: item && item.name ? String(item.name) : '',
+                        url: item && item.url ? String(item.url) : '',
+                        svg: item && item.svg ? String(item.svg) : ''
+                    };
+                }).filter(function (item) {
+                    return item.name || item.url || item.svg;
+                });
+            }
+        } catch (error) {
+        }
+
+        return parseSlowcloudLegacyLinkList(value);
+    }
+
+    function syncSlowcloudLinkList(storage, builder) {
+        var rows = Array.prototype.slice.call(builder.querySelectorAll('.slowcloud-link-list-row'));
+        var data = rows.map(function (row) {
+            return {
+                name: row.querySelector('[data-slowcloud-link-name]').value.trim(),
+                url: row.querySelector('[data-slowcloud-link-url]').value.trim(),
+                svg: row.querySelector('[data-slowcloud-link-svg]').value.trim()
+            };
+        }).filter(function (item) {
+            return item.name || item.url || item.svg;
+        });
+
+        storage.value = data.length ? JSON.stringify(data) : '';
+    }
+
+    function createSlowcloudLinkRow(item, storage, builder) {
+        var row = document.createElement('div');
+        row.className = 'slowcloud-link-list-row';
+        row.innerHTML = ''
+            + '<div class="slowcloud-link-list-fields">'
+            + '<label><span>名称</span><input type="text" class="text" data-slowcloud-link-name></label>'
+            + '<label><span>跳转地址</span><input type="text" class="text" data-slowcloud-link-url placeholder="https://example.com 或 /about"></label>'
+            + '<label><span>SVG 图标</span><textarea data-slowcloud-link-svg placeholder="<svg viewBox=&quot;0 0 24 24&quot;>...</svg>"></textarea></label>'
+            + '</div>'
+            + '<button type="button" class="btn btn-xs slowcloud-link-list-remove">删除</button>';
+
+        row.querySelector('[data-slowcloud-link-name]').value = item.name || '';
+        row.querySelector('[data-slowcloud-link-url]').value = item.url || '';
+        row.querySelector('[data-slowcloud-link-svg]').value = item.svg || '';
+        row.querySelector('.slowcloud-link-list-remove').addEventListener('click', function () {
+            row.parentNode.removeChild(row);
+            syncSlowcloudLinkList(storage, builder);
+        });
+
+        Array.prototype.forEach.call(row.querySelectorAll('input, textarea'), function (field) {
+            field.addEventListener('input', function () {
+                syncSlowcloudLinkList(storage, builder);
+            });
+        });
+
+        return row;
+    }
+
+    function buildSlowcloudLinkLists() {
+        var options = Array.prototype.slice.call(document.querySelectorAll('.typecho-option[data-slowcloud-link-list]'));
+        options.forEach(function (option) {
+            if (option.getAttribute('data-slowcloud-link-list-ready') === '1') {
+                return;
+            }
+
+            var storageName = option.getAttribute('data-slowcloud-link-list');
+            var storage = option.querySelector('textarea[name="' + storageName + '"], input[name="' + storageName + '"]')
+                || option.querySelector('textarea, input[type="hidden"]');
+            var host = option.querySelector('li') || option;
+            if (!storage || !host) {
+                return;
+            }
+
+            option.setAttribute('data-slowcloud-link-list-ready', '1');
+            storage.classList.add('slowcloud-link-list-storage');
+
+            var builder = document.createElement('div');
+            builder.className = 'slowcloud-link-list-builder';
+
+            var rows = document.createElement('div');
+            rows.className = 'slowcloud-link-list-rows';
+            rows.style.display = 'grid';
+            rows.style.gap = '12px';
+            builder.appendChild(rows);
+
+            var addWrap = document.createElement('div');
+            addWrap.className = 'slowcloud-link-list-actions';
+            var addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'btn btn-s';
+            addButton.textContent = option.getAttribute('data-slowcloud-link-add-label') || '添加';
+            addWrap.appendChild(addButton);
+            builder.appendChild(addWrap);
+
+            var entries = parseSlowcloudLinkListValue(storage.value);
+            if (!entries.length) {
+                entries = [{ name: '', url: '', svg: '' }];
+            }
+
+            entries.forEach(function (entry) {
+                rows.appendChild(createSlowcloudLinkRow(entry, storage, rows));
+            });
+
+            addButton.addEventListener('click', function () {
+                rows.appendChild(createSlowcloudLinkRow({ name: '', url: '', svg: '' }, storage, rows));
+                syncSlowcloudLinkList(storage, rows);
+            });
+
+            host.appendChild(builder);
+            syncSlowcloudLinkList(storage, rows);
+        });
+    }
+
     function buildSlowcloudThemeSettings() {
         var items = Array.prototype.slice.call(document.querySelectorAll('.typecho-option[data-slowcloud-group]'));
         if (!items.length) {
@@ -108,6 +356,8 @@ function slowcloud_theme_settings_enhancer(): \Typecho\Widget\Helper\Form\Elemen
         if (enhancer) {
             enhancer.classList.add('slowcloud-settings-enhancer');
         }
+
+        buildSlowcloudLinkLists();
     }
 
     if (document.readyState === 'loading') {
@@ -519,6 +769,28 @@ function themeConfig($form)
     );
     $bilibiliUrl->addRule('url', _t('请填写正确的 URL 地址'));
     $form->addInput(slowcloud_assign_settings_group($bilibiliUrl, 'author-card', '博主信息栏'));
+
+    $customSocialLinks = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'customSocialLinks',
+        null,
+        '',
+        _t('自定义入口'),
+        _t('支持添加多条自定义入口，展示在“其他平台”上方。每条包含名称、SVG 图标和跳转地址。')
+    );
+    $customSocialLinks->setAttribute('data-slowcloud-link-list', 'customSocialLinks');
+    $customSocialLinks->setAttribute('data-slowcloud-link-add-label', _t('添加入口'));
+    $form->addInput(slowcloud_assign_settings_group($customSocialLinks, 'author-card', '博主信息栏'));
+
+    $customPlatformLinks = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'customPlatformLinks',
+        null,
+        '',
+        _t('自定义平台'),
+        _t('支持添加多条自定义平台，展示在“其他平台”中。每条包含名称、SVG 图标和跳转地址。')
+    );
+    $customPlatformLinks->setAttribute('data-slowcloud-link-list', 'customPlatformLinks');
+    $customPlatformLinks->setAttribute('data-slowcloud-link-add-label', _t('添加平台'));
+    $form->addInput(slowcloud_assign_settings_group($customPlatformLinks, 'author-card', '博主信息栏'));
 
     $friendLinks = new \Typecho\Widget\Helper\Form\Element\Textarea(
         'friendLinks',
@@ -1878,6 +2150,209 @@ function slowcloud_rewrite_upload_html($archive, string $html): string
     );
 }
 
+function slowcloud_sanitize_inline_svg(string $svg): string
+{
+    $svg = trim($svg);
+    if ($svg === '' || stripos($svg, '<svg') === false || stripos($svg, '</svg>') === false) {
+        return '';
+    }
+    if (preg_match('/<!DOCTYPE|<!ENTITY/i', $svg)) {
+        return '';
+    }
+
+    $previous = libxml_use_internal_errors(true);
+    $dom = new \DOMDocument('1.0', 'UTF-8');
+    $loaded = $dom->loadXML($svg, LIBXML_NONET);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    if (!$loaded || !$dom->documentElement || strtolower($dom->documentElement->tagName) !== 'svg') {
+        return '';
+    }
+
+    $allowedTags = [
+        'svg' => true,
+        'g' => true,
+        'path' => true,
+        'circle' => true,
+        'rect' => true,
+        'line' => true,
+        'polyline' => true,
+        'polygon' => true,
+        'ellipse' => true,
+        'defs' => true,
+        'clippath' => true,
+        'mask' => true,
+        'use' => true,
+        'title' => true,
+        'desc' => true,
+        'lineargradient' => true,
+        'radialgradient' => true,
+        'stop' => true,
+    ];
+    $allowedAttrs = [
+        'aria-hidden' => true,
+        'class' => true,
+        'clip-rule' => true,
+        'clip-path' => true,
+        'cx' => true,
+        'cy' => true,
+        'd' => true,
+        'fill' => true,
+        'fill-rule' => true,
+        'height' => true,
+        'id' => true,
+        'mask' => true,
+        'offset' => true,
+        'opacity' => true,
+        'points' => true,
+        'r' => true,
+        'rx' => true,
+        'ry' => true,
+        'stroke' => true,
+        'stroke-dasharray' => true,
+        'stroke-dashoffset' => true,
+        'stroke-linecap' => true,
+        'stroke-linejoin' => true,
+        'stroke-miterlimit' => true,
+        'stroke-opacity' => true,
+        'stroke-width' => true,
+        'stop-color' => true,
+        'stop-opacity' => true,
+        'transform' => true,
+        'viewbox' => true,
+        'width' => true,
+        'x' => true,
+        'x1' => true,
+        'x2' => true,
+        'href' => true,
+        'xlink:href' => true,
+        'xmlns' => true,
+        'xmlns:xlink' => true,
+        'y' => true,
+        'y1' => true,
+        'y2' => true,
+    ];
+
+    $walker = static function (\DOMNode $node) use (&$walker, $allowedTags, $allowedAttrs): void {
+        if ($node instanceof \DOMElement) {
+            if (!isset($allowedTags[strtolower($node->tagName)])) {
+                if ($node->parentNode) {
+                    $node->parentNode->removeChild($node);
+                }
+                return;
+            }
+
+            for ($i = $node->attributes->length - 1; $i >= 0; $i--) {
+                $attr = $node->attributes->item($i);
+                if (!$attr) {
+                    continue;
+                }
+
+                $name = $attr->name;
+                $value = trim($attr->value);
+                $lowerName = strtolower($name);
+                $lowerValue = strtolower($value);
+                $isExternalHref = in_array($lowerName, ['href', 'xlink:href'], true) && $value !== '' && $value[0] !== '#';
+                $hasUnsafeUrl = preg_match('/(?:javascript|data):/i', $lowerValue)
+                    || (strpos($lowerValue, 'url(') !== false && !preg_match('/url\(\s*#[-_a-z0-9]+\s*\)/i', $lowerValue));
+                if (!isset($allowedAttrs[$lowerName]) || strpos($lowerName, 'on') === 0 || $isExternalHref || $hasUnsafeUrl) {
+                    $node->removeAttribute($name);
+                }
+            }
+        }
+
+        for ($child = $node->firstChild; $child !== null;) {
+            $next = $child->nextSibling;
+            $walker($child);
+            $child = $next;
+        }
+    };
+    $walker($dom->documentElement);
+
+    return trim((string) $dom->saveXML($dom->documentElement));
+}
+
+function slowcloud_is_safe_link_url(string $url): bool
+{
+    if ($url === '' || preg_match('/[\r\n]/', $url)) {
+        return false;
+    }
+
+    if (preg_match('#^https?://#i', $url)) {
+        return filter_var($url, FILTER_VALIDATE_URL) !== false;
+    }
+
+    return strpos($url, '/') === 0 && strpos($url, '//') !== 0;
+}
+
+function slowcloud_parse_custom_social_link_entries(string $raw): array
+{
+    $jsonEntries = json_decode($raw, true);
+    if (is_array($jsonEntries)) {
+        $entries = [];
+        foreach ($jsonEntries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $entries[] = [
+                trim((string) ($entry['name'] ?? '')),
+                trim((string) ($entry['url'] ?? '')),
+                trim((string) ($entry['svg'] ?? '')),
+            ];
+        }
+
+        return $entries;
+    }
+
+    $entries = [];
+    $lines = preg_split('/\r\n|\r|\n/', trim($raw)) ?: [];
+    $count = count($lines);
+
+    for ($i = 0; $i < $count; $i++) {
+        $line = trim((string) $lines[$i]);
+        if ($line === '' || strpos($line, '|') === false) {
+            continue;
+        }
+
+        $parts = array_map('trim', explode('|', $line, 3));
+        if (count($parts) >= 3) {
+            $entries[] = $parts;
+            continue;
+        }
+
+        [$name, $url] = $parts;
+        $svgLines = [];
+        while ($i + 1 < $count) {
+            $nextLine = trim((string) $lines[$i + 1]);
+            if ($nextLine === '') {
+                $i++;
+                if (!empty($svgLines) && stripos(implode('', $svgLines), '</svg>') !== false) {
+                    break;
+                }
+                continue;
+            }
+
+            if (!empty($svgLines) && strpos($nextLine, '|') !== false && stripos(implode('', $svgLines), '</svg>') !== false) {
+                break;
+            }
+
+            $svgLines[] = $nextLine;
+            $i++;
+            if (stripos($nextLine, '</svg>') !== false) {
+                break;
+            }
+        }
+
+        if (!empty($svgLines)) {
+            $entries[] = [$name, $url, implode('', $svgLines)];
+        }
+    }
+
+    return $entries;
+}
+
 function slowcloud_heading_anchor(string $text, array &$used): string
 {
     $text = slowcloud_seo_clean_text($text, 80);
@@ -2245,7 +2720,55 @@ function slowcloud_social_links($archive): array
 
         $links[] = [
             'name' => $platform['name'],
+            'iconType' => 'class',
             'icon' => $platform['icon'],
+            'url' => $url,
+        ];
+    }
+
+    return array_merge($links, slowcloud_custom_platform_links($archive));
+}
+
+function slowcloud_custom_social_links($archive): array
+{
+    return slowcloud_svg_links_from_option($archive, 'customSocialLinks');
+}
+
+function slowcloud_custom_platform_links($archive): array
+{
+    return slowcloud_svg_links_from_option($archive, 'customPlatformLinks');
+}
+
+function slowcloud_svg_links_from_option($archive, string $optionName): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $raw = trim((string) ($options->{$optionName} ?? ''));
+    if ($raw === '') {
+        return [];
+    }
+
+    $links = [];
+    foreach (slowcloud_parse_custom_social_link_entries($raw) as $entry) {
+        [$name, $second, $third] = array_map('trim', $entry);
+        if ($name === '') {
+            continue;
+        }
+
+        $svg = stripos($second, '<svg') !== false ? $second : $third;
+        $url = stripos($second, '<svg') !== false ? $third : $second;
+        if (!slowcloud_is_safe_link_url($url)) {
+            continue;
+        }
+
+        $svg = slowcloud_sanitize_inline_svg($svg);
+        if ($svg === '') {
+            continue;
+        }
+
+        $links[] = [
+            'name' => $name,
+            'iconType' => 'svg',
+            'icon' => $svg,
             'url' => $url,
         ];
     }

@@ -8,24 +8,43 @@
     <p class="slowcloud-home-author-bio"><?php echo htmlspecialchars(slowcloud_author_bio($this), ENT_QUOTES, $this->options->charset); ?></p>
 </div>
 
+<?php
+$renderAuthorLinks = function (array $links): void {
+    foreach ($links as $link): ?>
+        <li>
+            <a
+                class="slowcloud-home-author-social"
+                href="<?php echo htmlspecialchars($link['url'], ENT_QUOTES, $this->options->charset); ?>"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <?php if (($link['iconType'] ?? 'class') === 'svg'): ?>
+                    <span class="slowcloud-home-author-social-svg" aria-hidden="true"><?php echo $link['icon']; ?></span>
+                <?php else: ?>
+                    <span class="iconfont <?php echo htmlspecialchars($link['icon'], ENT_QUOTES, $this->options->charset); ?>" aria-hidden="true"></span>
+                <?php endif; ?>
+                <span><?php echo htmlspecialchars($link['name'], ENT_QUOTES, $this->options->charset); ?></span>
+            </a>
+        </li>
+    <?php endforeach;
+};
+?>
+
+<?php $customSocialLinks = slowcloud_custom_social_links($this); ?>
+<?php if (!empty($customSocialLinks)): ?>
+    <section class="slowcloud-home-author-links slowcloud-home-author-links-custom" aria-label="<?php _e('自定义入口'); ?>">
+        <ul class="slowcloud-home-author-links-list slowcloud-home-author-links-list-social">
+            <?php $renderAuthorLinks($customSocialLinks); ?>
+        </ul>
+    </section>
+<?php endif; ?>
+
 <?php $socialLinks = slowcloud_social_links($this); ?>
 <?php if (!empty($socialLinks)): ?>
-    <section class="slowcloud-home-author-links" aria-label="<?php _e('社交平台'); ?>">
+    <section class="slowcloud-home-author-links slowcloud-home-author-links-platforms" aria-label="<?php _e('社交平台'); ?>">
         <h3 class="slowcloud-home-author-links-title"><?php _e('其他平台'); ?></h3>
         <ul class="slowcloud-home-author-links-list slowcloud-home-author-links-list-social">
-            <?php foreach ($socialLinks as $socialLink): ?>
-                <li>
-                    <a
-                        class="slowcloud-home-author-social"
-                        href="<?php echo htmlspecialchars($socialLink['url'], ENT_QUOTES, $this->options->charset); ?>"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        <span class="iconfont <?php echo htmlspecialchars($socialLink['icon'], ENT_QUOTES, $this->options->charset); ?>" aria-hidden="true"></span>
-                        <span><?php echo htmlspecialchars($socialLink['name'], ENT_QUOTES, $this->options->charset); ?></span>
-                    </a>
-                </li>
-            <?php endforeach; ?>
+            <?php $renderAuthorLinks($socialLinks); ?>
         </ul>
     </section>
 <?php endif; ?>
