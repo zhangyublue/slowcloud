@@ -481,9 +481,13 @@ img {
 .slowcloud-home-author-links-custom .slowcloud-home-author-links-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
     gap: 8px;
+    width: max-content;
+    max-width: 100%;
+    margin-right: auto;
+    margin-left: auto;
     padding: 0;
     background: transparent;
     border-radius: 0;
@@ -496,15 +500,22 @@ img {
 .slowcloud-home-author-links-custom .slowcloud-home-author-links-list li {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
 }
 
 .slowcloud-home-author-links-custom .slowcloud-home-author-social {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: 1.25rem auto;
+    column-gap: 10px;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 1.25rem;
     line-height: 1;
+}
+
+.slowcloud-home-author-links-custom .slowcloud-home-author-social .iconfont,
+.slowcloud-home-author-links-custom .slowcloud-home-author-social-svg {
+    justify-self: center;
 }
 
 .slowcloud-home-author-links-platforms .slowcloud-home-author-links-list {
