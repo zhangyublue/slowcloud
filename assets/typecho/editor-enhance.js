@@ -3,6 +3,7 @@
     var labels = config.labels || {};
     var activeEditor = config.editor || null;
     var prismConfig = config.prism || {};
+    var fieldValues = config.fieldValues || {};
     var headingButton = null;
     var menu = null;
     var outsideCloseBound = false;
@@ -10,6 +11,9 @@
     var prismReady = null;
     var highlightTimer = null;
     var highlightRunId = 0;
+    var tocTimer = null;
+    var previewTocBound = false;
+    var customFieldChangeBound = false;
     var themeQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
     function injectStyle(id, href) {
@@ -310,9 +314,42 @@
         wrap.appendChild(item.pre);
     }
 
+    function isCustomFieldInput(input) {
+        var name = input && input.name ? input.name : '';
+
+        return /^fields\[[^\]]+\](?:\[\])?$/.test(name)
+            || name === 'fieldNames[]'
+            || name === 'fieldTypes[]'
+            || name === 'fieldValues[]';
+    }
+
+    function applyDraftFieldValues() {
+        Object.keys(fieldValues).forEach(function (name) {
+            var value = fieldValues[name];
+
+            Array.prototype.slice.call(document.querySelectorAll('[name="fields[' + name + ']"]')).forEach(function (input) {
+                if (input.type === 'radio' || input.type === 'checkbox') {
+                    input.checked = String(input.value) === String(value);
+                    return;
+                }
+
+                input.value = Array.isArray(value) || (value && typeof value === 'object')
+                    ? JSON.stringify(value)
+                    : String(value == null ? '' : value);
+            });
+        });
+    }
+
+    function tocInputs() {
+        return Array.prototype.slice.call(document.querySelectorAll('input')).filter(function (input) {
+            return input.name === 'fields[showToc]' || input.name === 'showToc';
+        });
+    }
+
     function shouldShowToc() {
-        var checked = document.querySelector('[name="fields[showToc]"]:checked');
-        return checked ? checked.value === '1' : false;
+        return tocInputs().some(function (input) {
+            return input.checked && input.value === '1';
+        });
     }
 
     function slugifyHeading(text, used) {
@@ -332,7 +369,59 @@
         return count > 0 ? slug + '-' + (count + 1) : slug;
     }
 
+    function markdownHeadingItems(used) {
+        var textarea = textArea();
+        var lines = textarea ? textarea.value.split(/\r?\n/) : [];
+        var items = [];
+        var inFence = false;
+
+        lines.forEach(function (line) {
+            var fence = line.match(/^\s*(```|~~~)/);
+            var match;
+            var text;
+            var level;
+            var id;
+
+            if (fence) {
+                inFence = !inFence;
+                return;
+            }
+
+            if (inFence) {
+                return;
+            }
+
+            match = line.match(/^\s{0,3}(#{2,4})\s+(.+?)\s*#*\s*$/);
+
+            if (!match) {
+                return;
+            }
+
+            text = match[2].trim();
+
+            if (!text) {
+                return;
+            }
+
+            level = match[1].length;
+            id = slugifyHeading(text, used);
+            items.push({
+                id: id,
+                text: text,
+                level: level
+            });
+        });
+
+        return items;
+    }
+
     function enhancePreviewToc(preview) {
+        if (!preview || preview.getAttribute('data-slowcloud-toc-lock') === '1') {
+            return;
+        }
+
+        preview.setAttribute('data-slowcloud-toc-lock', '1');
+
         var existing = preview.querySelector('.slowcloud-article-toc');
 
         if (existing) {
@@ -340,6 +429,9 @@
         }
 
         if (!shouldShowToc()) {
+            window.setTimeout(function () {
+                preview.removeAttribute('data-slowcloud-toc-lock');
+            }, 0);
             return;
         }
 
@@ -365,7 +457,25 @@
             });
         });
 
-        if (items.length < 2) {
+        if (items.length < 1) {
+            items = markdownHeadingItems(used);
+
+            items.forEach(function (item) {
+                var matches = headings.filter(function (heading) {
+                    return heading.textContent.trim() === item.text && Number(heading.tagName.slice(1)) === item.level;
+                });
+
+                if (matches.length > 0 && !matches[0].getAttribute('id')) {
+                    matches[0].setAttribute('id', item.id);
+                    matches[0].setAttribute('tabindex', '-1');
+                }
+            });
+        }
+
+        if (items.length < 1) {
+            window.setTimeout(function () {
+                preview.removeAttribute('data-slowcloud-toc-lock');
+            }, 0);
             return;
         }
 
@@ -394,6 +504,24 @@
         toc.appendChild(title);
         toc.appendChild(list);
         preview.insertBefore(toc, preview.firstChild);
+
+        window.setTimeout(function () {
+            preview.removeAttribute('data-slowcloud-toc-lock');
+        }, 0);
+    }
+
+    function schedulePreviewToc() {
+        window.clearTimeout(tocTimer);
+        tocTimer = window.setTimeout(function () {
+            var preview = document.getElementById('wmd-preview');
+
+            if (!preview) {
+                return;
+            }
+
+            preview.classList.add('slowcloud-editor-preview');
+            enhancePreviewToc(preview);
+        }, 40);
     }
 
     function highlightPreviewCode() {
@@ -774,7 +902,7 @@
     }
 
     function bindTocField() {
-        Array.prototype.slice.call(document.querySelectorAll('[name="fields[showToc]"]')).forEach(function (input) {
+        tocInputs().forEach(function (input) {
             if (input.getAttribute('data-slowcloud-toc-bound') === '1') {
                 return;
             }
@@ -782,9 +910,78 @@
             input.setAttribute('data-slowcloud-toc-bound', '1');
             input.addEventListener('change', function () {
                 refreshPreview();
-                highlightPreviewCode();
+                schedulePreviewToc();
             });
         });
+    }
+
+    function bindThemeFields() {
+        if (customFieldChangeBound) {
+            return;
+        }
+
+        customFieldChangeBound = true;
+
+        function markChanged(target) {
+            if (window.jQuery) {
+                window.jQuery(target).parents('form').trigger('write');
+            }
+        }
+
+        document.addEventListener('input', function (event) {
+            if (isCustomFieldInput(event.target)) {
+                markChanged(event.target);
+            }
+        }, true);
+
+        document.addEventListener('change', function (event) {
+            if (isCustomFieldInput(event.target)) {
+                markChanged(event.target);
+            }
+        }, true);
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest
+                ? event.target.closest('#custom-field button.btn-xs, #custom-field button.operate-add')
+                : null;
+
+            if (button) {
+                if (window.jQuery) {
+                    window.jQuery(button).parents('form').trigger('write');
+                }
+            }
+        }, true);
+    }
+
+    function bindPreviewTocRefresh() {
+        var preview = document.getElementById('wmd-preview');
+
+        if (!preview || previewTocBound) {
+            return;
+        }
+
+        previewTocBound = true;
+
+        if (typeof MutationObserver === 'function') {
+            new MutationObserver(function () {
+                if (preview.getAttribute('data-slowcloud-toc-lock') === '1') {
+                    return;
+                }
+
+                schedulePreviewToc();
+            }).observe(preview, {
+                childList: true,
+                subtree: true
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            var link = event.target.closest ? event.target.closest('a[href="#wmd-preview"]') : null;
+
+            if (link) {
+                schedulePreviewToc();
+            }
+        }, true);
     }
 
     function bindOutsideClose() {
@@ -856,11 +1053,15 @@
     }
 
     function init() {
+        applyDraftFieldValues();
         interceptHeadingButton();
         interceptCodeButton();
+        bindThemeFields();
         bindTocField();
+        bindPreviewTocRefresh();
         bindOutsideClose();
         highlightPreviewCode();
+        schedulePreviewToc();
     }
 
     forceMarkdownEditor();

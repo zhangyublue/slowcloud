@@ -577,6 +577,35 @@ function slowcloud_force_admin_markdown_editor(): void
     slowcloud_register_admin_editor_enhance();
 }
 
+function slowcloud_admin_draft_field_values($content): array
+{
+    $draft = $content->draft ?? null;
+    $cid = is_array($draft) ? (int) ($draft['cid'] ?? 0) : 0;
+
+    if ($cid <= 0) {
+        return [];
+    }
+
+    $db = \Typecho\Db::get();
+    $rows = $db->fetchAll($db->select()->from('table.fields')->where('cid = ?', $cid));
+    $fields = [];
+
+    foreach ($rows as $row) {
+        $name = (string) ($row['name'] ?? '');
+        $type = (string) ($row['type'] ?? 'str');
+
+        if ($name === '') {
+            continue;
+        }
+
+        $fields[$name] = $type === 'json'
+            ? json_decode((string) ($row['str_value'] ?? ''), true)
+            : (string) ($row[$type . '_value'] ?? '');
+    }
+
+    return $fields;
+}
+
 function slowcloud_render_admin_editor_enhance($content): void
 {
     $options = \Widget\Options::alloc();
@@ -610,6 +639,7 @@ function slowcloud_render_admin_editor_enhance($content): void
             toc: <?php echo json_encode(_t('文章目录'), JSON_UNESCAPED_UNICODE); ?>
         },
         themeMode: <?php echo json_encode($themeMode, JSON_UNESCAPED_UNICODE); ?>,
+        fieldValues: <?php echo json_encode(slowcloud_admin_draft_field_values($content), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
         prism: {
             core: <?php echo json_encode($prismBaseUrl . 'prism.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
             autoloader: <?php echo json_encode($prismBaseUrl . 'plugins/autoloader/prism-autoloader.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
@@ -1258,14 +1288,9 @@ function slowcloud_intro($archive): string
 
 function slowcloud_poster($archive): string
 {
-    $poster = trim((string) ($archive->fields->poster ?? ''));
+    $poster = slowcloud_field_value($archive, 'poster');
     if ($poster !== '') {
         return slowcloud_rewrite_upload_url($archive, $poster);
-    }
-
-    $requestFields = \Typecho\Request::getInstance()->getArray('fields');
-    if (is_array($requestFields) && isset($requestFields['poster'])) {
-        return slowcloud_rewrite_upload_url($archive, trim((string) $requestFields['poster']));
     }
 
     return '';
@@ -1273,6 +1298,11 @@ function slowcloud_poster($archive): string
 
 function slowcloud_field_value($archive, string $name): string
 {
+    $previewValue = slowcloud_preview_field_value($archive, $name);
+    if ($previewValue !== null) {
+        return $previewValue;
+    }
+
     $value = trim((string) ($archive->fields->{$name} ?? ''));
     if ($value !== '') {
         return $value;
@@ -1282,6 +1312,49 @@ function slowcloud_field_value($archive, string $name): string
     return is_array($requestFields) && isset($requestFields[$name])
         ? trim((string) $requestFields[$name])
         : '';
+}
+
+function slowcloud_preview_field_value($archive, string $name): ?string
+{
+    $parameter = $archive->parameter ?? null;
+    if (empty($parameter) || empty($parameter->preview) || (string) ($archive->type ?? '') !== 'revision') {
+        return null;
+    }
+
+    $cid = (int) ($archive->cid ?? 0);
+    if ($cid <= 0) {
+        return null;
+    }
+
+    static $cache = [];
+
+    if (!isset($cache[$cid])) {
+        $fields = [];
+        $db = \Typecho\Db::get();
+        $rows = $db->fetchAll($db->select()->from('table.fields')->where('cid = ?', $cid));
+
+        foreach ($rows as $row) {
+            $fieldName = (string) ($row['name'] ?? '');
+            $type = (string) ($row['type'] ?? 'str');
+
+            if ($fieldName === '') {
+                continue;
+            }
+
+            $fields[$fieldName] = $type === 'json'
+                ? json_decode((string) ($row['str_value'] ?? ''), true)
+                : ($row[$type . '_value'] ?? '');
+        }
+
+        $cache[$cid] = $fields;
+    }
+
+    if (!array_key_exists($name, $cache[$cid])) {
+        return null;
+    }
+
+    $value = $cache[$cid][$name];
+    return is_array($value) ? trim(json_encode($value, JSON_UNESCAPED_UNICODE)) : trim((string) $value);
 }
 
 function slowcloud_poster_alt($archive): string
@@ -2408,7 +2481,7 @@ function slowcloud_heading_anchor(string $text, array &$used): string
 
 function slowcloud_build_toc_html(array $items): string
 {
-    if (count($items) < 2) {
+    if (count($items) < 1) {
         return '';
     }
 
