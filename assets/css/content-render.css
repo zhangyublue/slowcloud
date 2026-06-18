@@ -27,7 +27,6 @@
 .slowcloud-article-toc {
     margin: 0 0 1.6em;
     padding: 14px 16px;
-    border: 1px solid var(--slowcloud-line, rgba(94, 122, 161, .18));
     border-radius: 8px;
     background: rgba(255, 255, 255, .58);
 }
