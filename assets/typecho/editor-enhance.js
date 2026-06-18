@@ -310,6 +310,92 @@
         wrap.appendChild(item.pre);
     }
 
+    function shouldShowToc() {
+        var checked = document.querySelector('[name="fields[showToc]"]:checked');
+        return checked ? checked.value === '1' : false;
+    }
+
+    function slugifyHeading(text, used) {
+        var slug = String(text || '')
+            .trim()
+            .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .toLowerCase();
+
+        if (!slug) {
+            slug = 'section';
+        }
+
+        var count = used[slug] || 0;
+        used[slug] = count + 1;
+
+        return count > 0 ? slug + '-' + (count + 1) : slug;
+    }
+
+    function enhancePreviewToc(preview) {
+        var existing = preview.querySelector('.slowcloud-article-toc');
+
+        if (existing) {
+            existing.parentNode.removeChild(existing);
+        }
+
+        if (!shouldShowToc()) {
+            return;
+        }
+
+        var headings = Array.prototype.slice.call(preview.querySelectorAll('h2, h3, h4'));
+        var used = {};
+        var items = [];
+
+        headings.forEach(function (heading) {
+            var text = heading.textContent.trim();
+            var id;
+
+            if (!text || heading.closest('.slowcloud-article-toc')) {
+                return;
+            }
+
+            id = heading.getAttribute('id') || slugifyHeading(text, used);
+            heading.setAttribute('id', id);
+            heading.setAttribute('tabindex', '-1');
+            items.push({
+                id: id,
+                text: text,
+                level: Number(heading.tagName.slice(1)) || 2
+            });
+        });
+
+        if (items.length < 2) {
+            return;
+        }
+
+        var toc = document.createElement('nav');
+        var title = document.createElement('div');
+        var list = document.createElement('ol');
+
+        toc.className = 'slowcloud-article-toc';
+        toc.setAttribute('aria-label', labels.toc || '文章目录');
+        title.className = 'slowcloud-article-toc__title';
+        title.textContent = labels.toc || '文章目录';
+        list.className = 'slowcloud-article-toc__list';
+
+        items.forEach(function (item) {
+            var li = document.createElement('li');
+            var link = document.createElement('a');
+            var level = Math.max(2, Math.min(4, item.level));
+
+            li.className = 'slowcloud-article-toc__item slowcloud-article-toc__item--level-' + level;
+            link.href = '#' + item.id;
+            link.textContent = item.text;
+            li.appendChild(link);
+            list.appendChild(li);
+        });
+
+        toc.appendChild(title);
+        toc.appendChild(list);
+        preview.insertBefore(toc, preview.firstChild);
+    }
+
     function highlightPreviewCode() {
         window.clearTimeout(highlightTimer);
         highlightTimer = window.setTimeout(runPreviewHighlight, 40);
@@ -326,6 +412,7 @@
         }
 
         preview.classList.add('slowcloud-editor-preview');
+        enhancePreviewToc(preview);
 
         ensurePrism().then(function () {
             if (runId !== highlightRunId) {
@@ -686,6 +773,20 @@
         }
     }
 
+    function bindTocField() {
+        Array.prototype.slice.call(document.querySelectorAll('[name="fields[showToc]"]')).forEach(function (input) {
+            if (input.getAttribute('data-slowcloud-toc-bound') === '1') {
+                return;
+            }
+
+            input.setAttribute('data-slowcloud-toc-bound', '1');
+            input.addEventListener('change', function () {
+                refreshPreview();
+                highlightPreviewCode();
+            });
+        });
+    }
+
     function bindOutsideClose() {
         if (outsideCloseBound) {
             return;
@@ -757,6 +858,7 @@
     function init() {
         interceptHeadingButton();
         interceptCodeButton();
+        bindTocField();
         bindOutsideClose();
         highlightPreviewCode();
     }

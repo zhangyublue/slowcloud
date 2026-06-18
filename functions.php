@@ -606,7 +606,8 @@ function slowcloud_render_admin_editor_enhance($content): void
         labels: {
             heading: <?php echo json_encode(_t('标题级别'), JSON_UNESCAPED_UNICODE); ?>,
             body: <?php echo json_encode(_t('正文'), JSON_UNESCAPED_UNICODE); ?>,
-            placeholder: <?php echo json_encode(_t('标题文字'), JSON_UNESCAPED_UNICODE); ?>
+            placeholder: <?php echo json_encode(_t('标题文字'), JSON_UNESCAPED_UNICODE); ?>,
+            toc: <?php echo json_encode(_t('文章目录'), JSON_UNESCAPED_UNICODE); ?>
         },
         themeMode: <?php echo json_encode($themeMode, JSON_UNESCAPED_UNICODE); ?>,
         prism: {
