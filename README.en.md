@@ -8,8 +8,12 @@ Slowcloud is a lightweight Typecho theme with a calm and airy visual style. It i
 
 Demo site: [https://slowcloud.cn](https://slowcloud.cn)
 
-![Slowcloud theme screenshot](./screenshot.png)
-![Slowcloud theme screenshot](./screenshot-black.png)
+<p align="center">
+  <img src="./screenshot.png" alt="Slowcloud theme light mode screenshot" width="720">
+</p>
+<p align="center">
+  <img src="./screenshot-black.png" alt="Slowcloud theme dark mode screenshot" width="720">
+</p>
 
 ## Requirements
 
