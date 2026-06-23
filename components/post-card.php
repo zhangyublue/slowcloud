@@ -1,43 +1,46 @@
-<article class="slowcloud-article-card" itemscope itemtype="http://schema.org/BlogPosting">
-    <?php $poster = slowcloud_poster($this); ?>
+<?php $poster = slowcloud_poster($this); ?>
+<?php $cardStyle = $poster !== '' ? slowcloud_post_card_style($this) : 'text'; ?>
+<article class="slowcloud-article-card slowcloud-article-card--<?php echo htmlspecialchars($cardStyle, ENT_QUOTES, $this->options->charset); ?><?php echo $poster !== '' ? ' slowcloud-article-card--with-poster' : ' slowcloud-article-card--no-poster'; ?>" itemscope itemtype="http://schema.org/BlogPosting">
     <?php if ($poster !== ''): ?>
         <a class="slowcloud-article-poster-link" href="<?php $this->permalink(); ?>" aria-label="<?php $this->title(); ?>">
             <img class="slowcloud-article-poster" src="<?php echo htmlspecialchars($poster, ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars(slowcloud_poster_alt($this), ENT_QUOTES, $this->options->charset); ?>" itemprop="image" loading="lazy" decoding="async"<?php echo slowcloud_image_dimension_attrs($this, $poster, $this->options->charset); ?><?php echo slowcloud_image_srcset_attrs($this, $poster, $this->options->charset, '(max-width: 768px) 100vw, 520px'); ?>>
         </a>
     <?php endif; ?>
 
-    <header class="slowcloud-article-header">
-        <h2 class="slowcloud-article-title" itemprop="name headline">
-            <?php $primaryCategory = slowcloud_primary_category($this); ?>
-            <?php if ($primaryCategory !== ''): ?>
-                <span class="slowcloud-article-category-tag"><?php echo htmlspecialchars($primaryCategory, ENT_QUOTES, $this->options->charset); ?></span>
-            <?php endif; ?>
-            <a href="<?php $this->permalink(); ?>" itemprop="url"><?php $this->title(); ?></a>
-        </h2>
-    </header>
+    <div class="slowcloud-article-card-body">
+        <header class="slowcloud-article-header">
+            <h2 class="slowcloud-article-title" itemprop="name headline">
+                <?php $primaryCategory = slowcloud_primary_category($this); ?>
+                <?php if ($primaryCategory !== ''): ?>
+                    <span class="slowcloud-article-category-tag"><?php echo htmlspecialchars($primaryCategory, ENT_QUOTES, $this->options->charset); ?></span>
+                <?php endif; ?>
+                <a href="<?php $this->permalink(); ?>" itemprop="url"><?php $this->title(); ?></a>
+            </h2>
+        </header>
 
-    <?php if ($poster === ''): ?>
-        <div class="slowcloud-entry-content slowcloud-article-excerpt" itemprop="articleBody">
-            <?php slowcloud_render_excerpt($this, 180, '...'); ?>
-        </div>
-    <?php endif; ?>
+        <?php if ($poster === '' || $cardStyle !== 'standard'): ?>
+            <div class="slowcloud-entry-content slowcloud-article-excerpt" itemprop="articleBody">
+                <?php slowcloud_render_excerpt($this, 180, '...'); ?>
+            </div>
+        <?php endif; ?>
 
-    <footer class="slowcloud-article-meta slowcloud-article-meta-card">
-        <span class="slowcloud-meta-item">
-            <span class="slowcloud-meta-icon iconfont icon-slowcloudadmin" aria-hidden="true"></span>
-            <span><?php $this->author(); ?></span>
-        </span>
-        <span class="slowcloud-meta-item">
-            <span class="slowcloud-meta-icon iconfont icon-slowcloudriqi2" aria-hidden="true"></span>
-            <time datetime="<?php $this->date('c'); ?>" itemprop="datePublished"><?php $this->date('Y-m-d'); ?></time>
-        </span>
-        <span class="slowcloud-meta-item">
-            <span class="slowcloud-meta-icon iconfont icon-slowcloudview" aria-hidden="true"></span>
-            <span><?php echo htmlspecialchars(slowcloud_views_text($this), ENT_QUOTES, $this->options->charset); ?></span>
-        </span>
-        <span class="slowcloud-meta-item">
-            <span class="slowcloud-meta-icon iconfont icon-slowcloudcommet" aria-hidden="true"></span>
-            <span><?php $this->commentsNum(_t('暂无评论'), _t('1 条评论'), _t('%d 条评论')); ?></span>
-        </span>
-    </footer>
+        <footer class="slowcloud-article-meta slowcloud-article-meta-card">
+            <span class="slowcloud-meta-item">
+                <span class="slowcloud-meta-icon iconfont icon-slowcloudadmin" aria-hidden="true"></span>
+                <span><?php $this->author(); ?></span>
+            </span>
+            <span class="slowcloud-meta-item">
+                <span class="slowcloud-meta-icon iconfont icon-slowcloudriqi2" aria-hidden="true"></span>
+                <time datetime="<?php $this->date('c'); ?>" itemprop="datePublished"><?php $this->date('Y-m-d'); ?></time>
+            </span>
+            <span class="slowcloud-meta-item">
+                <span class="slowcloud-meta-icon iconfont icon-slowcloudview" aria-hidden="true"></span>
+                <span><?php echo htmlspecialchars(slowcloud_views_text($this), ENT_QUOTES, $this->options->charset); ?></span>
+            </span>
+            <span class="slowcloud-meta-item">
+                <span class="slowcloud-meta-icon iconfont icon-slowcloudcommet" aria-hidden="true"></span>
+                <span><?php $this->commentsNum(_t('暂无评论'), _t('1 条评论'), _t('%d 条评论')); ?></span>
+            </span>
+        </footer>
+    </div>
 </article>

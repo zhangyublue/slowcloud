@@ -1222,6 +1222,19 @@ function themeFields($layout)
     );
     $layout->addItem($posterAlt);
 
+    $posterListStyle = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'posterListStyle',
+        [
+            'standard' => _t('默认海报'),
+            'media' => _t('横向媒体'),
+            'cover' => _t('沉浸封面'),
+        ],
+        'standard',
+        _t('列表海报样式'),
+        _t('仅文章海报不为空时生效。无海报文章会保持普通文本卡片。')
+    );
+    $layout->addItem($posterListStyle);
+
     $showToc = new \Typecho\Widget\Helper\Form\Element\Radio(
         'showToc',
         [
@@ -1365,6 +1378,12 @@ function slowcloud_poster_alt($archive): string
     }
 
     return slowcloud_seo_clean_text((string) ($archive->title ?? slowcloud_seo_archive_title($archive)), 120);
+}
+
+function slowcloud_post_card_style($archive): string
+{
+    $style = slowcloud_field_value($archive, 'posterListStyle');
+    return in_array($style, ['standard', 'media', 'cover'], true) ? $style : 'standard';
 }
 
 function slowcloud_show_article_toc($archive): bool
