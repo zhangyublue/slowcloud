@@ -266,7 +266,6 @@
         lightbox.setAttribute('aria-modal', 'true');
         lightbox.setAttribute('aria-label', '图片预览');
         lightbox.innerHTML = [
-            '<button class="slowcloud-image-lightbox__close" type="button" aria-label="关闭图片预览">×</button>',
             '<figure class="slowcloud-image-lightbox__figure">',
             '<img class="slowcloud-image-lightbox__image" alt="">',
             '<figcaption class="slowcloud-image-lightbox__caption" hidden></figcaption>',
@@ -274,7 +273,6 @@
         ].join('');
         document.body.appendChild(lightbox);
 
-        const closeButton = lightbox.querySelector('.slowcloud-image-lightbox__close');
         const previewImage = lightbox.querySelector('.slowcloud-image-lightbox__image');
         const caption = lightbox.querySelector('.slowcloud-image-lightbox__caption');
 
@@ -308,7 +306,6 @@
             caption.hidden = alt.trim() === '';
             body.classList.add('slowcloud-lightbox-open');
             lightbox.classList.add('is-active');
-            closeButton.focus({ preventScroll: true });
         };
 
         articleImages.forEach((image) => {
@@ -335,13 +332,7 @@
             });
         });
 
-        closeButton.addEventListener('click', closeLightbox);
-
-        lightbox.addEventListener('click', (event) => {
-            if (event.target === lightbox) {
-                closeLightbox();
-            }
-        });
+        lightbox.addEventListener('click', closeLightbox);
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && lightbox.classList.contains('is-active')) {
