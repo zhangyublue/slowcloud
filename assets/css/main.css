@@ -97,6 +97,80 @@ body {
     transition: background var(--slowcloud-motion-base), color var(--slowcloud-motion-base);
 }
 
+.slowcloud-top-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    width: 100%;
+    height: 2px;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    background: rgba(80, 127, 183, 0.1);
+    transition: opacity var(--slowcloud-motion-fast);
+}
+
+.slowcloud-top-loader.is-active {
+    opacity: 1;
+}
+
+.slowcloud-top-loader__beam {
+    position: absolute;
+    top: 0;
+    left: -32%;
+    width: 32%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(122, 166, 216, 0.24) 28%,
+        var(--slowcloud-accent-deep) 50%,
+        rgba(122, 166, 216, 0.24) 72%,
+        transparent 100%
+    );
+    box-shadow: 0 0 10px rgba(80, 127, 183, 0.38);
+    animation: slowcloud-top-loader-sweep 1.05s linear infinite;
+}
+
+:root[data-slowcloud-theme="dark"] .slowcloud-top-loader {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-slowcloud-theme="dark"] .slowcloud-top-loader__beam {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(142, 189, 255, 0.28) 28%,
+        var(--slowcloud-accent) 50%,
+        rgba(142, 189, 255, 0.28) 72%,
+        transparent 100%
+    );
+    box-shadow: 0 0 12px rgba(142, 189, 255, 0.48);
+}
+
+@keyframes slowcloud-top-loader-sweep {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(412.5%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .slowcloud-top-loader {
+        transition: none;
+    }
+
+    .slowcloud-top-loader__beam {
+        left: 0;
+        width: 100%;
+        animation: none;
+    }
+}
+
 a {
     color: var(--slowcloud-accent-deep);
     text-decoration: none;

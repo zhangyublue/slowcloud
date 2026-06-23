@@ -4,6 +4,7 @@
     const toggle = document.querySelector('[data-slowcloud-theme-toggle]');
     const coverHeader = document.querySelector('[data-slowcloud-cover]');
     const categoryLists = document.querySelectorAll('.category-list');
+    const topLoader = document.querySelector('[data-slowcloud-top-loader]');
     const storageKey = 'slowcloud-theme';
     const storage = window.sessionStorage;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -52,6 +53,112 @@
 
     applyTheme(getPreferredTheme());
     root.classList.add('slowcloud-ready');
+
+    if (topLoader) {
+        let hideTopLoaderTimer = 0;
+        const siteOrigin = window.location.origin;
+        const sitePath = `${window.location.pathname}${window.location.search}`;
+
+        const showTopLoader = () => {
+            window.clearTimeout(hideTopLoaderTimer);
+            topLoader.classList.add('is-active');
+        };
+
+        const hideTopLoader = () => {
+            window.clearTimeout(hideTopLoaderTimer);
+            hideTopLoaderTimer = window.setTimeout(() => {
+                topLoader.classList.remove('is-active');
+            }, 120);
+        };
+
+        const isPlainNavigationClick = (event) => (
+            event.button === 0
+            && !event.defaultPrevented
+            && !event.metaKey
+            && !event.ctrlKey
+            && !event.shiftKey
+            && !event.altKey
+        );
+
+        const shouldShowLoaderForLink = (link) => {
+            if (!link || link.dataset.noLoader !== undefined) {
+                return false;
+            }
+
+            const href = link.getAttribute('href') || '';
+            if (
+                href === ''
+                || href.startsWith('#')
+                || href.startsWith('javascript:')
+                || href.startsWith('mailto:')
+                || href.startsWith('tel:')
+                || link.hasAttribute('download')
+                || (link.target && link.target !== '_self')
+            ) {
+                return false;
+            }
+
+            let url;
+            try {
+                url = new URL(href, window.location.href);
+            } catch (error) {
+                return false;
+            }
+
+            if (url.origin !== siteOrigin) {
+                return false;
+            }
+
+            const nextPath = `${url.pathname}${url.search}`;
+            return nextPath !== sitePath || url.hash === '';
+        };
+
+        const shouldShowLoaderForForm = (form) => {
+            if (!form || form.dataset.noLoader !== undefined) {
+                return false;
+            }
+
+            const method = (form.getAttribute('method') || 'get').toLowerCase();
+            if (method !== 'get' && method !== 'post') {
+                return false;
+            }
+
+            const target = form.getAttribute('target') || '';
+            if (target && target !== '_self') {
+                return false;
+            }
+
+            const action = form.getAttribute('action') || window.location.href;
+            try {
+                return new URL(action, window.location.href).origin === siteOrigin;
+            } catch (error) {
+                return false;
+            }
+        };
+
+        window.addEventListener('load', hideTopLoader);
+        window.addEventListener('pageshow', hideTopLoader);
+        window.addEventListener('pagehide', showTopLoader);
+
+        document.addEventListener('click', (event) => {
+            if (!isPlainNavigationClick(event)) {
+                return;
+            }
+
+            const link = event.target.closest('a[href]');
+            if (shouldShowLoaderForLink(link)) {
+                showTopLoader();
+            }
+        });
+
+        document.addEventListener('submit', (event) => {
+            if (shouldShowLoaderForForm(event.target)) {
+                showTopLoader();
+            }
+        });
+
+        hideTopLoaderTimer = window.setTimeout(hideTopLoader, 2200);
+    }
 
     if (toggle) {
         toggle.addEventListener('click', () => {
