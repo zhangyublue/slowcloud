@@ -6,7 +6,6 @@
             <img class="slowcloud-article-poster" src="<?php echo htmlspecialchars($poster, ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars(slowcloud_poster_alt($this), ENT_QUOTES, $this->options->charset); ?>" itemprop="image" loading="lazy" decoding="async"<?php echo slowcloud_image_dimension_attrs($this, $poster, $this->options->charset); ?><?php echo slowcloud_image_srcset_attrs($this, $poster, $this->options->charset, '(max-width: 768px) 100vw, 520px'); ?>>
         </a>
     <?php endif; ?>
-
     <div class="slowcloud-article-card-body">
         <header class="slowcloud-article-header">
             <h2 class="slowcloud-article-title" itemprop="name headline">
@@ -19,9 +18,15 @@
         </header>
 
         <?php if ($poster === '' || $cardStyle !== 'standard'): ?>
-            <div class="slowcloud-entry-content slowcloud-article-excerpt" itemprop="articleBody">
-                <?php slowcloud_render_excerpt($this, 180, '...'); ?>
-            </div>
+            <?php if ($cardStyle === 'cover' || $cardStyle === 'media'): ?>
+                <a class="slowcloud-entry-content slowcloud-article-excerpt slowcloud-article-excerpt-link" href="<?php $this->permalink(); ?>" itemprop="articleBody">
+                    <?php slowcloud_render_excerpt($this, 180, '...'); ?>
+                </a>
+            <?php else: ?>
+                <div class="slowcloud-entry-content slowcloud-article-excerpt" itemprop="articleBody">
+                    <?php slowcloud_render_excerpt($this, 180, '...'); ?>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <footer class="slowcloud-article-meta slowcloud-article-meta-card">
