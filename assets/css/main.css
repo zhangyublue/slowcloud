@@ -923,6 +923,7 @@ img {
 .slowcloud-article-card--cover.slowcloud-article-card--with-poster {
     position: relative;
     aspect-ratio: 100 / 30;
+    min-height: 200px;
     padding: 0;
     isolation: isolate;
 }
