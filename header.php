@@ -37,7 +37,7 @@
     <?php slowcloud_render_typecho_header($this, 'description=&keywords=&social='); ?>
 </head>
 <body class="slowcloud-body" data-slowcloud-theme-mode="<?php echo htmlspecialchars($slowcloudThemeMode, ENT_QUOTES, $this->options->charset); ?>">
-<div class="slowcloud-top-loader is-active" data-slowcloud-top-loader aria-hidden="true">
+<div class="slowcloud-top-loader" data-slowcloud-top-loader aria-hidden="true">
     <span class="slowcloud-top-loader__beam"></span>
 </div>
 <div class="slowcloud-site-wrap" style="--slowcloud-container: <?php echo htmlspecialchars($slowcloudSiteWidth, ENT_QUOTES, $this->options->charset); ?>;">
