@@ -874,7 +874,7 @@ img {
 .slowcloud-article-poster-link {
     display: block;
     width: calc(100% + 36px);
-    aspect-ratio: 100 / 35;
+    aspect-ratio: 100 / 30;
     margin: -14px -18px 20px;
     overflow: hidden;
 }
@@ -922,7 +922,7 @@ img {
 
 .slowcloud-article-card--cover.slowcloud-article-card--with-poster {
     position: relative;
-    min-height: 260px;
+    aspect-ratio: 100 / 30;
     padding: 0;
     isolation: isolate;
 }
@@ -949,7 +949,7 @@ img {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    min-height: 260px;
+    min-height: 100%;
     padding: 22px 24px;
     color: #fff;
 }
@@ -1892,13 +1892,7 @@ img {
         margin-top: -22px;
     }
 
-    .slowcloud-article-card--cover.slowcloud-article-card--with-poster {
-        min-height: 220px;
-        padding: 0;
-    }
-
     .slowcloud-article-card--cover .slowcloud-article-card-body {
-        min-height: 220px;
         padding: 20px 18px;
     }
 
