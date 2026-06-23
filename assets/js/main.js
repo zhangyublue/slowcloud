@@ -253,9 +253,9 @@
         });
     });
 
-    const articleContent = document.querySelector('.slowcloud-article-detail .slowcloud-entry-content');
-    const articleImages = articleContent
-        ? Array.from(articleContent.querySelectorAll('img:not(.slowcloud-owo-image)'))
+    const articleDetail = document.querySelector('.slowcloud-article-detail');
+    const articleImages = articleDetail
+        ? Array.from(articleDetail.querySelectorAll('.slowcloud-article-poster-detail, .slowcloud-entry-content img:not(.slowcloud-owo-image)'))
         : [];
 
     if (articleImages.length > 0) {
