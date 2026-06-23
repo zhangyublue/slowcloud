@@ -378,6 +378,27 @@ function slowcloud_theme_asset_url(string $path, $archive = null): string
     return \Typecho\Common::url(ltrim($path, '/'), (string) ($options->siteUrl ?? ''));
 }
 
+function slowcloud_theme_file_version(string $path): string
+{
+    $relativePath = ltrim($path, '/');
+    $themePrefix = 'usr/themes/slowcloud/';
+
+    if (strpos($relativePath, $themePrefix) === 0) {
+        $relativePath = substr($relativePath, strlen($themePrefix));
+    }
+
+    $file = __DIR__ . '/' . $relativePath;
+    return is_file($file) ? (string) filemtime($file) : '1.0.0';
+}
+
+function slowcloud_theme_versioned_theme_url(string $path, $archive = null): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $url = (string) $options->themeUrl(ltrim($path, '/'), 'slowcloud');
+    $separator = strpos($url, '?') === false ? '?' : '&';
+    return $url . $separator . 'v=' . rawurlencode(slowcloud_theme_file_version($path));
+}
+
 function slowcloud_theme_asset_cdn_url(string $path, $archive = null): string
 {
     return slowcloud_rewrite_cdn_url($archive, slowcloud_theme_asset_url($path, $archive));
@@ -609,21 +630,15 @@ function slowcloud_admin_draft_field_values($content): array
 function slowcloud_render_admin_editor_enhance($content): void
 {
     $options = \Widget\Options::alloc();
-    $cssUrl = $options->themeUrl('assets/typecho/editor-enhance.css', 'slowcloud');
-    $cssFile = $options->themeFile('slowcloud', 'assets/typecho/editor-enhance.css');
-    $contentCssUrl = $options->themeUrl('assets/css/content-render.css', 'slowcloud');
-    $contentCssFile = $options->themeFile('slowcloud', 'assets/css/content-render.css');
-    $codeCssUrl = $options->themeUrl('assets/css/code-highlight.css', 'slowcloud');
-    $codeCssFile = $options->themeFile('slowcloud', 'assets/css/code-highlight.css');
     $scriptFile = $options->themeFile('slowcloud', 'assets/typecho/editor-enhance.js');
-    $prismBaseUrl = rtrim((string) $options->themeUrl('assets/typecho/prism', 'slowcloud'), '/') . '/';
+    $prismComponentsUrl = rtrim((string) $options->themeUrl('assets/typecho/prism/components', 'slowcloud'), '/') . '/';
     $themeMode = (string) ($options->themeMode ?? 'system');
     ?>
 	    (function () {
 		        [
-		            <?php echo json_encode($contentCssUrl . '?v=' . (is_file($contentCssFile) ? filemtime($contentCssFile) : time()), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-		            <?php echo json_encode($codeCssUrl . '?v=' . (is_file($codeCssFile) ? filemtime($codeCssFile) : time()), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-		            <?php echo json_encode($cssUrl . '?v=' . (is_file($cssFile) ? filemtime($cssFile) : time()), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/css/content-render.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/css/code-highlight.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/editor-enhance.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
 		        ].forEach(function (href) {
 	            var link = document.createElement('link');
 	            link.rel = 'stylesheet';
@@ -641,13 +656,13 @@ function slowcloud_render_admin_editor_enhance($content): void
         themeMode: <?php echo json_encode($themeMode, JSON_UNESCAPED_UNICODE); ?>,
         fieldValues: <?php echo json_encode(slowcloud_admin_draft_field_values($content), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
         prism: {
-            core: <?php echo json_encode($prismBaseUrl . 'prism.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-            autoloader: <?php echo json_encode($prismBaseUrl . 'plugins/autoloader/prism-autoloader.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-            components: <?php echo json_encode($prismBaseUrl . 'components/', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-            lineNumbersScript: <?php echo json_encode($prismBaseUrl . 'plugins/line-numbers/prism-line-numbers.js', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-            lineNumbersStyle: <?php echo json_encode($prismBaseUrl . 'plugins/line-numbers/prism-line-numbers.css', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-            coyStyle: <?php echo json_encode($prismBaseUrl . 'themes/prism-coy.css', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
-            okaidiaStyle: <?php echo json_encode($prismBaseUrl . 'themes/prism-okaidia.css', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+            core: <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/prism/prism.js'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            autoloader: <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/autoloader/prism-autoloader.js'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            components: <?php echo json_encode($prismComponentsUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            lineNumbersScript: <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/line-numbers/prism-line-numbers.js'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            lineNumbersStyle: <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/line-numbers/prism-line-numbers.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            coyStyle: <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/prism/themes/prism-coy.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
+            okaidiaStyle: <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/prism/themes/prism-okaidia.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
         },
         editor: editor
     };

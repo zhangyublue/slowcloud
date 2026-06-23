@@ -4,7 +4,7 @@ $slowcloudIcpBeian = slowcloud_icp_beian($this);
 $slowcloudIcpBeianUrl = slowcloud_icp_beian_url($this);
 $slowcloudPublicSecurityBeian = slowcloud_public_security_beian($this);
 $slowcloudPublicSecurityBeianUrl = slowcloud_public_security_beian_url($this);
-$slowcloudPrismBaseUrl = rtrim((string) $this->options->themeUrl('assets/typecho/prism', 'slowcloud'), '/') . '/';
+$slowcloudPrismComponentsUrl = rtrim((string) $this->options->themeUrl('assets/typecho/prism/components', 'slowcloud'), '/') . '/';
 ?>
     <footer class="slowcloud-site-footer">
         <div class="slowcloud-footer-inner">
@@ -26,21 +26,21 @@ $slowcloudPrismBaseUrl = rtrim((string) $this->options->themeUrl('assets/typecho
 </div>
 
 <?php slowcloud_track_site_visit($this); ?>
-<script src="<?php $this->options->themeUrl('assets/js/main.js'); ?>"></script>
+<script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/js/main.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
 <script>
 window.Prism = window.Prism || {};
 window.Prism.manual = true;
 window.SlowcloudCodeHighlight = {
     themeMode: <?php echo json_encode(slowcloud_theme_mode($this), JSON_UNESCAPED_UNICODE); ?>,
     prism: {
-        components: <?php echo json_encode($slowcloudPrismBaseUrl . 'components/', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+        components: <?php echo json_encode($slowcloudPrismComponentsUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
     }
 };
 </script>
-<script src="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'prism.js', ENT_QUOTES, $this->options->charset); ?>"></script>
-<script src="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'plugins/autoloader/prism-autoloader.js', ENT_QUOTES, $this->options->charset); ?>" data-autoloader-path="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'components/', ENT_QUOTES, $this->options->charset); ?>"></script>
-<script src="<?php echo htmlspecialchars($slowcloudPrismBaseUrl . 'plugins/line-numbers/prism-line-numbers.js', ENT_QUOTES, $this->options->charset); ?>"></script>
-<script src="<?php $this->options->themeUrl('assets/js/code-highlight.js'); ?>"></script>
+<script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/prism.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
+<script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/autoloader/prism-autoloader.js', $this), ENT_QUOTES, $this->options->charset); ?>" data-autoloader-path="<?php echo htmlspecialchars($slowcloudPrismComponentsUrl, ENT_QUOTES, $this->options->charset); ?>"></script>
+<script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/line-numbers/prism-line-numbers.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
+<script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/js/code-highlight.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
 <?php $this->footer(); ?>
 </body>
 </html>

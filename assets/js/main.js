@@ -253,6 +253,103 @@
         });
     });
 
+    const articleContent = document.querySelector('.slowcloud-article-detail .slowcloud-entry-content');
+    const articleImages = articleContent
+        ? Array.from(articleContent.querySelectorAll('img:not(.slowcloud-owo-image)'))
+        : [];
+
+    if (articleImages.length > 0) {
+        let lightboxCleanupTimer = 0;
+        const lightbox = document.createElement('div');
+        lightbox.className = 'slowcloud-image-lightbox';
+        lightbox.setAttribute('role', 'dialog');
+        lightbox.setAttribute('aria-modal', 'true');
+        lightbox.setAttribute('aria-label', '图片预览');
+        lightbox.innerHTML = [
+            '<button class="slowcloud-image-lightbox__close" type="button" aria-label="关闭图片预览">×</button>',
+            '<figure class="slowcloud-image-lightbox__figure">',
+            '<img class="slowcloud-image-lightbox__image" alt="">',
+            '<figcaption class="slowcloud-image-lightbox__caption" hidden></figcaption>',
+            '</figure>'
+        ].join('');
+        document.body.appendChild(lightbox);
+
+        const closeButton = lightbox.querySelector('.slowcloud-image-lightbox__close');
+        const previewImage = lightbox.querySelector('.slowcloud-image-lightbox__image');
+        const caption = lightbox.querySelector('.slowcloud-image-lightbox__caption');
+
+        const closeLightbox = () => {
+            window.clearTimeout(lightboxCleanupTimer);
+            lightbox.classList.remove('is-active');
+            body.classList.remove('slowcloud-lightbox-open');
+            lightboxCleanupTimer = window.setTimeout(() => {
+                if (lightbox.classList.contains('is-active')) {
+                    return;
+                }
+
+                previewImage.removeAttribute('src');
+                previewImage.alt = '';
+                caption.textContent = '';
+                caption.hidden = true;
+            }, 220);
+        };
+
+        const openLightbox = (image) => {
+            const source = image.currentSrc || image.src;
+            if (!source) {
+                return;
+            }
+
+            window.clearTimeout(lightboxCleanupTimer);
+            const alt = image.getAttribute('alt') || '';
+            previewImage.src = source;
+            previewImage.alt = alt;
+            caption.textContent = alt;
+            caption.hidden = alt.trim() === '';
+            body.classList.add('slowcloud-lightbox-open');
+            lightbox.classList.add('is-active');
+            closeButton.focus({ preventScroll: true });
+        };
+
+        articleImages.forEach((image) => {
+            if (image.closest('a')) {
+                return;
+            }
+
+            image.classList.add('slowcloud-lightbox-image');
+            image.setAttribute('tabindex', '0');
+            image.setAttribute('role', 'button');
+            image.setAttribute('aria-label', image.alt ? `查看图片：${image.alt}` : '查看图片');
+
+            image.addEventListener('click', () => {
+                openLightbox(image);
+            });
+
+            image.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+
+                event.preventDefault();
+                openLightbox(image);
+            });
+        });
+
+        closeButton.addEventListener('click', closeLightbox);
+
+        lightbox.addEventListener('click', (event) => {
+            if (event.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && lightbox.classList.contains('is-active')) {
+                closeLightbox();
+            }
+        });
+    }
+
     const emojiToggle = document.querySelector('[data-slowcloud-emoji-toggle]');
     const emojiPanel = document.querySelector('[data-slowcloud-emoji-panel]');
     const commentTextarea = document.querySelector('#textarea');
