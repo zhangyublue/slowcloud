@@ -25,7 +25,6 @@ $slowcloudPrismComponentsUrl = rtrim((string) $this->options->themeUrl('assets/t
     </footer>
 </div>
 
-<?php slowcloud_track_site_visit($this); ?>
 <script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/js/main.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
 <script>
 window.Prism = window.Prism || {};

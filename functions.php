@@ -2631,24 +2631,22 @@ function slowcloud_views_text($archive): string
     return sprintf(_t('%d 次浏览'), slowcloud_views($archive));
 }
 
-function slowcloud_record_view($archive): int
+function slowcloud_record_post_view_by_cid(int $cid, $archive = null): int
 {
-    if (!isset($archive->cid) || (string) ($archive->type ?? '') !== 'post') {
+    if ($cid <= 0) {
         return 0;
     }
 
-    $currentViews = slowcloud_views($archive);
-    $user = \Widget\User::alloc();
-    if ($user->hasLogin() && isset($archive->authorId) && (int) $archive->authorId === (int) $user->uid) {
-        return $currentViews;
-    }
-
-    $cid = (int) $archive->cid;
+    $currentViews = $archive !== null ? slowcloud_views($archive) : 0;
     $views = $currentViews + 1;
     $db = \Typecho\Db::get();
-    $exists = $db->fetchRow($db->select('cid')
+    $exists = $db->fetchRow($db->select('cid', 'int_value')
         ->from('table.fields')
         ->where('cid = ? AND name = ?', $cid, 'views'));
+
+    if ($exists) {
+        $views = max(0, (int) ($exists['int_value'] ?? 0)) + 1;
+    }
 
     $rows = [
         'type' => 'int',
@@ -2667,9 +2665,23 @@ function slowcloud_record_view($archive): int
         $db->query($db->insert('table.fields')->rows($rows));
     }
 
-    $archive->fields->views = $views;
+    if ($archive !== null && isset($archive->fields)) {
+        $archive->fields->views = $views;
+    }
 
     return $views;
+}
+
+function slowcloud_record_view($archive): int
+{
+    if (!isset($archive->cid) || (string) ($archive->type ?? '') !== 'post') {
+        return 0;
+    }
+
+    $before = slowcloud_views($archive);
+    slowcloud_record_current_visit($archive);
+
+    return max($before, slowcloud_views($archive));
 }
 
 function slowcloud_show_sidebar($archive): bool
@@ -3932,10 +3944,10 @@ function slowcloud_update_daily_stats(string $statDate, int $time, bool $increas
     ]));
 }
 
-function slowcloud_record_site_visit($request, array $statsTarget, ?string $pathOverride = null, ?bool $isCountedOverride = null): void
+function slowcloud_record_site_visit($request, array $statsTarget, ?string $pathOverride = null, ?bool $isCountedOverride = null, $archive = null): bool
 {
     if (!slowcloud_stats_storage_ready()) {
-        return;
+        return false;
     }
 
     $db = \Typecho\Db::get();
@@ -3964,7 +3976,7 @@ function slowcloud_record_site_visit($request, array $statsTarget, ?string $path
     ]));
 
     if (!$isCounted) {
-        return;
+        return true;
     }
 
     $visitorsTable = slowcloud_stats_table('visitors');
@@ -4000,6 +4012,12 @@ function slowcloud_record_site_visit($request, array $statsTarget, ?string $path
     }
 
     slowcloud_update_daily_stats($statDate, $time, $increaseUv);
+
+    if ($archive !== null && $pageType === 'post' && isset($archive->cid)) {
+        slowcloud_record_post_view_by_cid((int) $archive->cid, $archive);
+    }
+
+    return true;
 }
 
 function slowcloud_track_site_visit_from_request($request): void
@@ -4018,6 +4036,38 @@ function slowcloud_track_site_visit_from_request($request): void
         }
 
         slowcloud_record_site_visit($request, $statsTarget, $path, slowcloud_should_count_visit_request($request));
+    } catch (\Throwable $e) {
+    }
+}
+
+function slowcloud_record_current_visit($archive): void
+{
+    static $recorded = false;
+
+    if ($recorded) {
+        return;
+    }
+
+    try {
+        $context = slowcloud_get_stats_context();
+        $statsTarget = $context !== [] ? $context : $archive;
+
+        if (!slowcloud_should_record_visit($statsTarget)) {
+            return;
+        }
+
+        $request = $archive->request ?? \Widget\Options::alloc()->request;
+        $payload = slowcloud_stats_payload($archive);
+        $path = (string) ($payload['path'] ?? '');
+
+        if ($path === '' || slowcloud_is_excluded_stats_path((string) parse_url($path, PHP_URL_PATH))) {
+            return;
+        }
+
+        $recorded = slowcloud_record_site_visit($request, [
+            'page_type' => (string) ($payload['page_type'] ?? ''),
+            'theme_file' => (string) ($payload['theme_file'] ?? ''),
+        ], $path, slowcloud_should_count_visit($archive), $archive);
     } catch (\Throwable $e) {
     }
 }
