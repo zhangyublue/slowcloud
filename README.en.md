@@ -24,6 +24,21 @@ Demo site: [https://slowcloud.cn](https://slowcloud.cn)
 
 ## Features
 
+### V1.0.1
+
+- Enhanced SEO fields for individual posts, including SEO title, SEO description, canonical URL, and noindex.
+- Automatic output for description, robots, Open Graph, Twitter Card, and JSON-LD structured data.
+- Added Sitemap and Robots support. The theme can respond to `sitemap.xml` and `robots.txt`, and the sitemap includes the home page, posts, pages, and post poster image data.
+- Improved visit statistics. The theme can record PV, UV, IP, and recent visits by itself, while the `SlowcloudStatistics` plugin mainly provides the admin statistics panel.
+- More precise statistics filtering, excluding logged-in administrators, HEAD requests, non-HTML requests, prefetch requests, and common crawler user agents. Excluded visits can still appear in recent visits, but they do not increase PV, UV, or post views.
+- Added a post TOC switch, disabled by default. Added poster alt text and three post list styles for posts with posters: standard poster, horizontal media, and immersive cover.
+- Article content images and post poster images can be enlarged on click. Internal navigation shows a top loading bar that automatically moves below the header when the header is visible.
+- Added custom entry and social platform configuration. Multiple links can be configured in the admin panel with a name, SVG icon, and target URL.
+- Improved tag cloud and post tag display with `#` prefixes and tag counts. Code blocks now include a copy button.
+- Added version query strings for theme assets, and improved editor preview, TOC preview, code block insertion, and draft custom-field saving.
+
+### V1.0.0
+
 - Templates for home, archives, search results, single posts, standalone pages, 404, and timeline pages.
 - Responsive three-column layout with optional sidebar visibility.
 - Customizable header logo, background image, height, site width, and intro text.
