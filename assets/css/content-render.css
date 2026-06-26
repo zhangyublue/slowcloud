@@ -28,7 +28,7 @@
     margin: 0 0 1.6em;
     padding: 14px 16px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, .58);
+    background: var(--slowcloud-toc-bg, rgba(255, 255, 255, .58));
 }
 
 .slowcloud-article-toc__title {

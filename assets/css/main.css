@@ -23,6 +23,7 @@
     --slowcloud-pagination-bg: rgba(255, 255, 255, 0.78);
     --slowcloud-comment-item-bg: rgba(255, 255, 255, 0.7);
     --slowcloud-sidebar-list-bg: #f9f9f9;
+    --slowcloud-toc-bg: rgba(255, 255, 255, 0.58);
     --slowcloud-brand-bg: linear-gradient(135deg, #cfe6ff 0%, #87b4ea 100%);
     --slowcloud-orb-bg: rgba(255, 255, 255, 0.72);
     --slowcloud-orb-ring: rgba(255, 255, 255, 0.2);
@@ -62,6 +63,7 @@
     --slowcloud-pagination-bg: rgba(20, 31, 48, 0.9);
     --slowcloud-comment-item-bg: rgba(18, 27, 41, 0.9);
     --slowcloud-sidebar-list-bg: rgba(18, 28, 43, 0.84);
+    --slowcloud-toc-bg: rgba(18, 28, 43, 0.72);
     --slowcloud-brand-bg: linear-gradient(135deg, #203a5f 0%, #4a79b8 100%);
     --slowcloud-orb-bg: rgba(233, 242, 255, 0.82);
     --slowcloud-orb-ring: rgba(255, 255, 255, 0.14);
