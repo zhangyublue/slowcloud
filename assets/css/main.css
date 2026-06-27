@@ -506,12 +506,24 @@ img {
     fill: currentColor;
 }
 
-.slowcloud-home-author-social-svg svg [fill="none"] {
-    fill: none;
+/* 强制把用户输入的自定义 SVG 内所有子元素 fill 统一到 currentColor,
+   覆盖 SVG 字符串里硬编码的 fill="#xxx" 和 inline style="fill:..."。
+   保留两类显式豁免:fill="none"(线条图标留白)和 stroke 由下方规则处理。 */
+.slowcloud-home-author-social-svg svg * {
+    fill: currentColor !important;
 }
 
-.slowcloud-home-author-social-svg svg [stroke] {
-    stroke: currentColor;
+.slowcloud-home-author-social-svg svg [fill="none"],
+.slowcloud-home-author-social-svg svg [fill="none"] * {
+    fill: none !important;
+}
+
+.slowcloud-home-author-social-svg svg [stroke]:not([stroke="none"]) {
+    stroke: currentColor !important;
+}
+
+.slowcloud-home-author-social-svg svg [stroke="none"] {
+    stroke: none !important;
 }
 
 .slowcloud-home-author-social:hover .iconfont,
