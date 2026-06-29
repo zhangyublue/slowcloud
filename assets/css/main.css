@@ -1884,15 +1884,32 @@ img {
     padding-left: 0;
 }
 
+.slowcloud-pagination-wrap,
+.slowcloud-comment-pagination {
+    display: flex;
+    justify-content: center;
+}
+
 .slowcloud-pagination-wrap ul,
 .slowcloud-comment-pagination ol,
 .slowcloud-comment-pagination ul {
-    display: flex;
+    display: inline-flex;
     flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    gap: 2px;
     padding: 0;
     margin: 0;
     list-style: none;
+    background: var(--slowcloud-pagination-bg);
+    border-radius: 6px;
+    box-shadow: var(--slowcloud-shadow);
+    font-size: 0.85rem;
+    overflow: hidden;
+}
+
+.slowcloud-pagination-wrap li,
+.slowcloud-comment-pagination li {
+    display: inline-flex;
 }
 
 .slowcloud-pagination-wrap a,
@@ -1902,11 +1919,75 @@ img {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 42px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: var(--slowcloud-pagination-bg);
-    border: 1px solid var(--slowcloud-line);
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border-radius: 6px;
+    color: var(--slowcloud-text);
+    background: transparent;
+    border: none;
+    font-weight: 500;
+    text-decoration: none;
+    transition:
+        background var(--slowcloud-motion-fast),
+        color var(--slowcloud-motion-fast);
+}
+
+.slowcloud-pagination-wrap span,
+.slowcloud-comment-pagination span {
+    color: var(--slowcloud-muted);
+    cursor: default;
+    letter-spacing: 1px;
+}
+
+.slowcloud-pagination-wrap a:hover,
+.slowcloud-comment-pagination a:hover {
+    color: var(--slowcloud-accent-deep);
+}
+
+.slowcloud-pagination-wrap .slowcloud-is-current a,
+.slowcloud-pagination-wrap .slowcloud-is-current span,
+.slowcloud-comment-pagination .current a,
+.slowcloud-comment-pagination .current span {
+    background: var(--slowcloud-accent-deep);
+    color: var(--slowcloud-button-text);
+    font-weight: 600;
+    cursor: default;
+}
+
+.slowcloud-pagination-wrap .slowcloud-is-current a:hover,
+.slowcloud-comment-pagination .current a:hover {
+    color: var(--slowcloud-button-text);
+}
+
+.slowcloud-pagination-wrap li.prev a,
+.slowcloud-pagination-wrap li.next a,
+.slowcloud-comment-pagination li.prev a,
+.slowcloud-comment-pagination li.next a {
+    font-size: 0;
+    line-height: 1;
+}
+
+.slowcloud-pagination-wrap li.prev a::before,
+.slowcloud-comment-pagination li.prev a::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    margin-left: 3px;
+}
+
+.slowcloud-pagination-wrap li.next a::before,
+.slowcloud-comment-pagination li.next a::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid currentColor;
+    border-top: 2px solid currentColor;
+    transform: rotate(45deg);
+    margin-right: 3px;
 }
 
 .slowcloud-empty-card {
