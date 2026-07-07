@@ -2981,10 +2981,6 @@ function slowcloud_site_stats($archive): array
         ->where('table.contents.type = ?', 'post')
         ->where('table.contents.status = ?', 'publish'));
 
-    $viewStats = $db->fetchRow($db->select([
-        'SUM(table.fields.int_value)' => 'views',
-    ])->from('table.fields')
-        ->where('table.fields.name = ?', 'views'));
     $trafficStats = slowcloud_stats_overview();
 
     $firstCreated = isset($postStats['first_created']) ? (int) $postStats['first_created'] : 0;
@@ -3006,10 +3002,6 @@ function slowcloud_site_stats($archive): array
         [
             'label' => _t('访问数量'),
             'value' => (string) $trafficStats['total_pv'],
-        ],
-        [
-            'label' => _t('文章浏览'),
-            'value' => (string) (int) ($viewStats['views'] ?? 0),
         ],
     ];
 
