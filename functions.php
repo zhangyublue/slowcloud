@@ -2294,6 +2294,145 @@ function slowcloud_rewrite_upload_html($archive, string $html): string
     );
 }
 
+function slowcloud_bilibili_video_data(string $url): ?array
+{
+    $url = trim(html_entity_decode($url, ENT_QUOTES, 'UTF-8'));
+    if ($url === '') {
+        return null;
+    }
+
+    $parts = parse_url($url);
+    if ($parts === false || !isset($parts['host'], $parts['path'])) {
+        return null;
+    }
+
+    $host = strtolower((string) $parts['host']);
+    if ($host !== 'bilibili.com' && $host !== 'www.bilibili.com') {
+        return null;
+    }
+
+    if (!preg_match('~^/video/(BV[0-9A-Za-z]{10})/?$~', (string) $parts['path'], $matches)) {
+        return null;
+    }
+
+    $query = [];
+    if (!empty($parts['query'])) {
+        parse_str((string) $parts['query'], $query);
+    }
+
+    $page = filter_var($query['p'] ?? 1, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => 1000],
+    ]);
+    $time = filter_var($query['t'] ?? 0, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 0, 'max_range' => 86400],
+    ]);
+
+    return [
+        'bvid' => $matches[1],
+        'page' => $page === false ? 1 : $page,
+        'time' => $time === false ? 0 : $time,
+    ];
+}
+
+function slowcloud_bilibili_embed_element(\DOMDocument $document, array $video): \DOMElement
+{
+    $params = [
+        'bvid' => $video['bvid'],
+        'page' => $video['page'],
+        'high_quality' => 1,
+        'danmaku' => 0,
+    ];
+
+    if ($video['time'] > 0) {
+        $params['t'] = $video['time'];
+    }
+
+    $figure = $document->createElement('figure');
+    $figure->setAttribute('class', 'slowcloud-bilibili-embed');
+
+    $player = $document->createElement('div');
+    $player->setAttribute('class', 'slowcloud-bilibili-embed__player');
+
+    $iframe = $document->createElement('iframe');
+    $iframe->setAttribute('src', 'https://player.bilibili.com/player.html?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986));
+    $iframe->setAttribute('title', 'Bilibili video');
+    $iframe->setAttribute('loading', 'lazy');
+    $iframe->setAttribute('scrolling', 'no');
+    $iframe->setAttribute('frameborder', '0');
+    $iframe->setAttribute('allowfullscreen', 'allowfullscreen');
+    $iframe->setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+
+    $player->appendChild($iframe);
+    $figure->appendChild($player);
+
+    return $figure;
+}
+
+function slowcloud_embed_bilibili_videos(string $html): string
+{
+    if ($html === '' || stripos($html, 'bilibili.com/video/') === false || !class_exists('DOMDocument')) {
+        return $html;
+    }
+
+    $document = new \DOMDocument('1.0', 'UTF-8');
+    $previous = libxml_use_internal_errors(true);
+    $loaded = $document->loadHTML('<?xml encoding="UTF-8"><div id="slowcloud-content-root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    if (!$loaded) {
+        return $html;
+    }
+
+    $paragraphs = $document->getElementsByTagName('p');
+    $replace = [];
+
+    foreach ($paragraphs as $paragraph) {
+        $link = null;
+        $valid = true;
+
+        foreach ($paragraph->childNodes as $child) {
+            if ($child instanceof \DOMText && trim($child->nodeValue) === '') {
+                continue;
+            }
+
+            if ($child instanceof \DOMElement && strtolower($child->tagName) === 'a' && $link === null) {
+                $link = $child;
+                continue;
+            }
+
+            $valid = false;
+            break;
+        }
+
+        $video = $valid && $link instanceof \DOMElement
+            ? slowcloud_bilibili_video_data((string) $link->getAttribute('href'))
+            : null;
+
+        if ($video !== null) {
+            $replace[] = [$paragraph, $video];
+        }
+    }
+
+    foreach ($replace as [$paragraph, $video]) {
+        if ($paragraph->parentNode) {
+            $paragraph->parentNode->replaceChild(slowcloud_bilibili_embed_element($document, $video), $paragraph);
+        }
+    }
+
+    $root = $document->getElementById('slowcloud-content-root');
+    if (!$root) {
+        return $html;
+    }
+
+    $result = '';
+    foreach ($root->childNodes as $child) {
+        $result .= $document->saveHTML($child);
+    }
+
+    return $result !== '' ? $result : $html;
+}
+
 function slowcloud_sanitize_inline_svg(string $svg): string
 {
     $svg = trim($svg);
@@ -2609,6 +2748,7 @@ function slowcloud_render_content($archive): void
     $archive->content();
     $html = slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
     $html = slowcloud_replace_owo_shortcodes($archive, $html);
+    $html = slowcloud_embed_bilibili_videos($html);
     $enhanced = slowcloud_enhance_content_headings($html);
     echo (slowcloud_show_article_toc($archive) ? $enhanced['toc'] : '') . $enhanced['html'];
 }

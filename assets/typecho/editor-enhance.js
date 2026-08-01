@@ -520,8 +520,91 @@
             }
 
             preview.classList.add('slowcloud-editor-preview');
+            enhancePreviewBilibili(preview);
             enhancePreviewToc(preview);
         }, 40);
+    }
+
+    function bilibiliVideoData(url) {
+        var parsed;
+        var match;
+        var page;
+        var time;
+
+        try {
+            parsed = new URL(url, window.location.href);
+        } catch (error) {
+            return null;
+        }
+
+        if (parsed.hostname !== 'bilibili.com' && parsed.hostname !== 'www.bilibili.com') {
+            return null;
+        }
+
+        match = parsed.pathname.match(/^\/video\/(BV[0-9A-Za-z]{10})\/?$/);
+        if (!match) {
+            return null;
+        }
+
+        page = Number(parsed.searchParams.get('p') || 1);
+        time = Number(parsed.searchParams.get('t') || 0);
+
+        return {
+            bvid: match[1],
+            page: Number.isInteger(page) && page >= 1 && page <= 1000 ? page : 1,
+            time: Number.isInteger(time) && time >= 0 && time <= 86400 ? time : 0
+        };
+    }
+
+    function enhancePreviewBilibili(preview) {
+        Array.prototype.slice.call(preview.querySelectorAll('p')).forEach(function (paragraph) {
+            var nodes = Array.prototype.slice.call(paragraph.childNodes);
+            var link = null;
+            var valid = true;
+            var video;
+            var playerUrl;
+            var figure;
+            var player;
+            var iframe;
+
+            nodes.forEach(function (node) {
+                if (node.nodeType === Node.TEXT_NODE && !node.nodeValue.trim()) {
+                    return;
+                }
+
+                if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'A' && !link) {
+                    link = node;
+                    return;
+                }
+
+                valid = false;
+            });
+
+            video = valid && link ? bilibiliVideoData(link.href) : null;
+            if (!video) {
+                return;
+            }
+
+            playerUrl = 'https://player.bilibili.com/player.html?bvid=' + encodeURIComponent(video.bvid)
+                + '&page=' + video.page + '&high_quality=1&danmaku=0'
+                + (video.time > 0 ? '&t=' + video.time : '');
+            figure = document.createElement('figure');
+            player = document.createElement('div');
+            iframe = document.createElement('iframe');
+
+            figure.className = 'slowcloud-bilibili-embed';
+            player.className = 'slowcloud-bilibili-embed__player';
+            iframe.src = playerUrl;
+            iframe.title = 'Bilibili video';
+            iframe.loading = 'lazy';
+            iframe.scrolling = 'no';
+            iframe.setAttribute('frameborder', '0');
+            iframe.allowFullscreen = true;
+            iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+            player.appendChild(iframe);
+            figure.appendChild(player);
+            paragraph.parentNode.replaceChild(figure, paragraph);
+        });
     }
 
     function highlightPreviewCode() {
@@ -540,6 +623,7 @@
         }
 
         preview.classList.add('slowcloud-editor-preview');
+        enhancePreviewBilibili(preview);
         enhancePreviewToc(preview);
 
         ensurePrism().then(function () {
