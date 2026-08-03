@@ -40,6 +40,8 @@ window.SlowcloudCodeHighlight = {
 <script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/autoloader/prism-autoloader.js', $this), ENT_QUOTES, $this->options->charset); ?>" data-autoloader-path="<?php echo htmlspecialchars($slowcloudPrismComponentsUrl, ENT_QUOTES, $this->options->charset); ?>"></script>
 <script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/line-numbers/prism-line-numbers.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
 <script src="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/js/code-highlight.js', $this), ENT_QUOTES, $this->options->charset); ?>"></script>
+<?php slowcloud_record_excluded_bot_visit($this); ?>
+<?php slowcloud_track_site_visit($this); ?>
 <?php $this->footer(); ?>
 </body>
 </html>

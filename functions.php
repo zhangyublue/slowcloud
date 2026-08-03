@@ -1012,7 +1012,7 @@ function slowcloud_handle_stats_track_request($archive): void
         $ok = $requestMethod === 'POST' && slowcloud_stats_storage_ready();
 
         if ($ok) {
-            slowcloud_track_site_visit_from_request($request);
+            $ok = slowcloud_track_site_visit_from_request($request);
         }
     } catch (\Throwable $e) {
         $ok = false;
@@ -2777,33 +2777,34 @@ function slowcloud_record_post_view_by_cid(int $cid, $archive = null): int
         return 0;
     }
 
-    $currentViews = $archive !== null ? slowcloud_views($archive) : 0;
-    $views = $currentViews + 1;
     $db = \Typecho\Db::get();
-    $exists = $db->fetchRow($db->select('cid', 'int_value')
+    $fieldsTable = $db->getPrefix() . 'fields';
+    $exists = $db->fetchRow($db->select('cid')
         ->from('table.fields')
-        ->where('cid = ? AND name = ?', $cid, 'views'));
+        ->where('cid = ? AND name = ?', $cid, 'views')
+        ->limit(1));
 
-    if ($exists) {
-        $views = max(0, (int) ($exists['int_value'] ?? 0)) + 1;
+    if (!$exists) {
+        try {
+            $db->query($db->insert('table.fields')->rows([
+                'cid' => $cid,
+                'name' => 'views',
+                'type' => 'int',
+                'str_value' => null,
+                'int_value' => 0,
+                'float_value' => 0,
+            ]));
+        } catch (\Throwable $e) {
+            // Another request may have created the field between the read and insert.
+        }
     }
 
-    $rows = [
-        'type' => 'int',
-        'str_value' => null,
-        'int_value' => $views,
-        'float_value' => 0,
-    ];
-
-    if ($exists) {
-        $db->query($db->update('table.fields')
-            ->rows($rows)
-            ->where('cid = ? AND name = ?', $cid, 'views'));
-    } else {
-        $rows['cid'] = $cid;
-        $rows['name'] = 'views';
-        $db->query($db->insert('table.fields')->rows($rows));
-    }
+    $db->query("UPDATE {$fieldsTable} SET int_value = int_value + 1 WHERE cid = {$cid} AND name = 'views'");
+    $row = $db->fetchRow($db->select('int_value')
+        ->from('table.fields')
+        ->where('cid = ? AND name = ?', $cid, 'views')
+        ->limit(1));
+    $views = max(0, (int) ($row['int_value'] ?? 0));
 
     if ($archive !== null && isset($archive->fields)) {
         $archive->fields->views = $views;
@@ -2818,10 +2819,8 @@ function slowcloud_record_view($archive): int
         return 0;
     }
 
-    $before = slowcloud_views($archive);
-    slowcloud_record_current_visit($archive);
-
-    return max($before, slowcloud_views($archive));
+    // Views are recorded by the validated browser beacon, not during rendering.
+    return slowcloud_views($archive);
 }
 
 function slowcloud_show_sidebar($archive): bool
@@ -3769,6 +3768,102 @@ function slowcloud_stats_track_url($archive): string
     return (substr($index, -4) === '.php' ? $index : $index . '/') . '?slowcloud_stats_track=1';
 }
 
+function slowcloud_stats_base64url_encode(string $value): string
+{
+    return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+}
+
+function slowcloud_stats_base64url_decode(string $value): ?string
+{
+    $value = strtr($value, '-_', '+/');
+    $padding = strlen($value) % 4;
+    if ($padding !== 0) {
+        $value .= str_repeat('=', 4 - $padding);
+    }
+
+    $decoded = base64_decode($value, true);
+    return $decoded === false ? null : $decoded;
+}
+
+function slowcloud_stats_token_secret(): string
+{
+    static $secret = null;
+
+    if (is_string($secret) && $secret !== '') {
+        return $secret;
+    }
+
+    $secret = (string) (slowcloud_stats_get_option('track_token_secret') ?? '');
+    if ($secret !== '') {
+        return $secret;
+    }
+
+    try {
+        $secret = bin2hex(random_bytes(32));
+    } catch (\Throwable $e) {
+        $secret = sha1(uniqid('slowcloud_stats_', true) . microtime(true));
+    }
+
+    slowcloud_stats_set_option('track_token_secret', $secret);
+    return $secret;
+}
+
+function slowcloud_stats_track_token($archive): string
+{
+    $context = slowcloud_get_stats_context();
+    $visitorId = (string) ($context['visitor_id'] ?? slowcloud_stats_visitor_id());
+    $payload = slowcloud_stats_payload($archive);
+
+    if ($visitorId === '' || !slowcloud_is_valid_front_page($payload)) {
+        return '';
+    }
+
+    $pageType = (string) ($payload['page_type'] ?? '');
+    $cid = $pageType === 'post' && isset($archive->cid) ? (int) $archive->cid : 0;
+    $data = [
+        'v' => hash('sha256', $visitorId),
+        'p' => (string) ($payload['path'] ?? ''),
+        't' => $pageType,
+        'f' => (string) ($payload['theme_file'] ?? ''),
+        'c' => $cid,
+        'e' => time() + 300,
+    ];
+    $encoded = slowcloud_stats_base64url_encode((string) json_encode($data, JSON_UNESCAPED_SLASHES));
+    $signature = hash_hmac('sha256', $encoded, slowcloud_stats_token_secret(), true);
+
+    return $encoded . '.' . slowcloud_stats_base64url_encode($signature);
+}
+
+function slowcloud_stats_track_token_payload(string $token): ?array
+{
+    $parts = explode('.', $token, 2);
+    if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+        return null;
+    }
+
+    $signature = slowcloud_stats_base64url_decode($parts[1]);
+    $expected = hash_hmac('sha256', $parts[0], slowcloud_stats_token_secret(), true);
+    $json = slowcloud_stats_base64url_decode($parts[0]);
+    $payload = $json === null ? null : json_decode($json, true);
+
+    if (!is_string($signature) || !hash_equals($expected, $signature) || !is_array($payload)) {
+        return null;
+    }
+
+    $expiresAt = (int) ($payload['e'] ?? 0);
+    if ($expiresAt < time() || $expiresAt > time() + 600) {
+        return null;
+    }
+
+    foreach (['v', 'p', 't', 'f'] as $key) {
+        if (!isset($payload[$key]) || !is_string($payload[$key])) {
+            return null;
+        }
+    }
+
+    return $payload;
+}
+
 function slowcloud_is_valid_front_page($archive): bool
 {
     if (is_array($archive)) {
@@ -3983,7 +4078,7 @@ function slowcloud_should_count_visit($archive): bool
     }
 
     $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
-    if (slowcloud_is_bot_user_agent($userAgent)) {
+    if ($userAgent === '' || slowcloud_is_bot_user_agent($userAgent)) {
         return false;
     }
 
@@ -4004,7 +4099,7 @@ function slowcloud_should_count_visit_request($request): bool
     }
 
     $userAgent = strtolower((string) $request->getServer('HTTP_USER_AGENT', ''));
-    if (slowcloud_is_bot_user_agent($userAgent)) {
+    if ($userAgent === '' || slowcloud_is_bot_user_agent($userAgent)) {
         return false;
     }
 
@@ -4076,7 +4171,7 @@ function slowcloud_update_daily_stats(string $statDate, int $time, bool $increas
     ]));
 }
 
-function slowcloud_record_site_visit($request, array $statsTarget, ?string $pathOverride = null, ?bool $isCountedOverride = null, $archive = null): bool
+function slowcloud_record_site_visit($request, array $statsTarget, ?string $pathOverride = null, ?bool $isCountedOverride = null, ?int $postCid = null): bool
 {
     if (!slowcloud_stats_storage_ready()) {
         return false;
@@ -4145,94 +4240,174 @@ function slowcloud_record_site_visit($request, array $statsTarget, ?string $path
 
     slowcloud_update_daily_stats($statDate, $time, $increaseUv);
 
-    if ($archive !== null && $pageType === 'post' && isset($archive->cid)) {
-        slowcloud_record_post_view_by_cid((int) $archive->cid, $archive);
+    if ($pageType === 'post' && $postCid !== null) {
+        slowcloud_record_post_view_by_cid($postCid);
     }
 
     return true;
 }
 
-function slowcloud_track_site_visit_from_request($request): void
+function slowcloud_stats_is_same_origin_request($request): bool
 {
-    try {
-        $pageType = trim((string) $request->get('page_type', ''));
-        $themeFile = trim((string) $request->get('theme_file', ''));
-        $path = substr(trim((string) $request->get('path', '')), 0, 255);
-        $statsTarget = [
-            'page_type' => $pageType,
-            'theme_file' => $themeFile,
-        ];
+    $options = \Widget\Options::alloc();
+    $site = parse_url((string) $options->index);
+    $siteScheme = strtolower((string) ($site['scheme'] ?? ''));
+    $siteHost = strtolower((string) ($site['host'] ?? ''));
+    $sitePort = (int) ($site['port'] ?? ($siteScheme === 'https' ? 443 : 80));
+    $origin = trim((string) $request->getServer('HTTP_ORIGIN', ''));
+    $referer = trim((string) $request->getServer('HTTP_REFERER', ''));
+    $fetchSite = strtolower(trim((string) $request->getServer('HTTP_SEC_FETCH_SITE', '')));
 
-        if ($path === '' || !slowcloud_is_valid_front_page($statsTarget) || slowcloud_is_excluded_stats_path((string) parse_url($path, PHP_URL_PATH))) {
-            return;
+    if ($fetchSite !== '' && $fetchSite !== 'same-origin') {
+        return false;
+    }
+
+    foreach ([$origin, $referer] as $url) {
+        if ($url === '') {
+            continue;
         }
 
-        slowcloud_record_site_visit($request, $statsTarget, $path, slowcloud_should_count_visit_request($request));
+        $source = parse_url($url);
+        $scheme = strtolower((string) ($source['scheme'] ?? ''));
+        $host = strtolower((string) ($source['host'] ?? ''));
+        $port = (int) ($source['port'] ?? ($scheme === 'https' ? 443 : 80));
+        if (
+            $scheme === ''
+            || $host === ''
+            || $siteScheme === ''
+            || $siteHost === ''
+            || !hash_equals($siteScheme, $scheme)
+            || !hash_equals($siteHost, $host)
+            || $sitePort !== $port
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function slowcloud_stats_recent_duplicate(string $visitorId, string $path, int $time, int $windowSeconds = 10): bool
+{
+    $db = \Typecho\Db::get();
+    $row = $db->fetchRow($db->select('id')
+        ->from(slowcloud_stats_table('visits'))
+        ->where('visitor_id = ? AND path = ? AND is_counted = ?', $visitorId, $path, 1)
+        ->where('visited_at >= ?', $time - max(1, $windowSeconds))
+        ->limit(1));
+
+    return !empty($row);
+}
+
+function slowcloud_track_site_visit_from_request($request): bool
+{
+    try {
+        if (!slowcloud_stats_is_same_origin_request($request) || !slowcloud_should_count_visit_request($request)) {
+            return false;
+        }
+
+        $payload = slowcloud_stats_track_token_payload(trim((string) $request->get('token', '')));
+        if ($payload === null) {
+            return false;
+        }
+
+        $visitorId = trim((string) \Typecho\Cookie::get('slowcloud_visitor_id', ''));
+        $path = substr(trim((string) ($payload['p'] ?? '')), 0, 255);
+        $pageType = trim((string) ($payload['t'] ?? ''));
+        $themeFile = trim((string) ($payload['f'] ?? ''));
+        $postCid = $pageType === 'post' ? (int) ($payload['c'] ?? 0) : 0;
+
+        if (
+            $visitorId === ''
+            || !hash_equals((string) ($payload['v'] ?? ''), hash('sha256', $visitorId))
+            || $path === ''
+            || slowcloud_is_excluded_stats_path((string) parse_url($path, PHP_URL_PATH))
+            || !slowcloud_is_valid_front_page(['page_type' => $pageType, 'theme_file' => $themeFile])
+            || ($pageType === 'post' && $postCid <= 0)
+            || slowcloud_stats_recent_duplicate($visitorId, $path, \Typecho\Date::time())
+        ) {
+            return false;
+        }
+
+        return slowcloud_record_site_visit($request, [
+            'page_type' => $pageType,
+            'theme_file' => $themeFile,
+        ], $path, true, $postCid > 0 ? $postCid : null);
     } catch (\Throwable $e) {
+        return false;
     }
 }
 
-function slowcloud_record_current_visit($archive): void
+function slowcloud_record_excluded_bot_visit($archive): void
 {
     static $recorded = false;
 
-    if ($recorded) {
+    $context = slowcloud_get_stats_context();
+    $statsTarget = $context !== [] ? $context : $archive;
+
+    if ($recorded || !slowcloud_should_record_visit($statsTarget)) {
+        return;
+    }
+
+    $request = $archive->request ?? \Widget\Options::alloc()->request;
+    if (!slowcloud_is_bot_user_agent((string) $request->getServer('HTTP_USER_AGENT', ''))) {
         return;
     }
 
     try {
-        $context = slowcloud_get_stats_context();
-        $statsTarget = $context !== [] ? $context : $archive;
-
-        if (!slowcloud_should_record_visit($statsTarget)) {
-            return;
-        }
-
-        $request = $archive->request ?? \Widget\Options::alloc()->request;
         $payload = slowcloud_stats_payload($archive);
-        $path = (string) ($payload['path'] ?? '');
-
-        if ($path === '' || slowcloud_is_excluded_stats_path((string) parse_url($path, PHP_URL_PATH))) {
-            return;
-        }
-
         $recorded = slowcloud_record_site_visit($request, [
             'page_type' => (string) ($payload['page_type'] ?? ''),
             'theme_file' => (string) ($payload['theme_file'] ?? ''),
-        ], $path, slowcloud_should_count_visit($archive), $archive);
+        ], (string) ($payload['path'] ?? ''), false);
     } catch (\Throwable $e) {
     }
 }
 
 function slowcloud_track_site_visit($archive): void
 {
-    if (!slowcloud_should_record_visit(slowcloud_get_stats_context() !== [] ? slowcloud_get_stats_context() : $archive)) {
+    $context = slowcloud_get_stats_context();
+    $statsTarget = $context !== [] ? $context : $archive;
+
+    if (!slowcloud_should_track_request($statsTarget)) {
         return;
     }
 
     $trackUrl = slowcloud_stats_track_url($archive);
-    $payload = slowcloud_stats_payload($archive);
+    $token = slowcloud_stats_track_token($archive);
+    if ($token === '') {
+        return;
+    }
     ?>
 <script>
 (function () {
     var url = <?php echo json_encode($trackUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
-    var data = <?php echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?> || {};
-    var body = new URLSearchParams(data).toString();
+    var body = new URLSearchParams({ token: <?php echo json_encode($token, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?> }).toString();
+    var sent = false;
 
-    if (navigator.sendBeacon) {
-        navigator.sendBeacon(url, new Blob([body], { type: 'application/x-www-form-urlencoded;charset=UTF-8' }));
-        return;
+    function send() {
+        if (sent || document.visibilityState !== 'visible') {
+            return;
+        }
+
+        sent = true;
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url, new Blob([body], { type: 'application/x-www-form-urlencoded;charset=UTF-8' }));
+            return;
+        }
+
+        if (window.fetch) {
+            fetch(url, {
+                method: 'POST',
+                body: body,
+                credentials: 'same-origin',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+            }).catch(function () {});
+        }
     }
 
-    if (window.fetch) {
-        fetch(url, {
-            method: 'POST',
-            body: body,
-            credentials: 'same-origin',
-            keepalive: true,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
-        }).catch(function () {});
-    }
+    window.setTimeout(send, 2000);
 })();
 </script>
     <?php

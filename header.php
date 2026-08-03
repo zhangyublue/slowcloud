@@ -8,7 +8,6 @@
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
 <?php $slowcloudSeoContext = slowcloud_seo_context($this); ?>
 <?php slowcloud_set_stats_context($this); ?>
-<?php slowcloud_record_current_visit($this); ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
