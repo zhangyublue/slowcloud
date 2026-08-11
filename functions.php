@@ -2856,7 +2856,7 @@ function slowcloud_author_avatar($archive): string
 
 function slowcloud_comment_default_avatar($archive): string
 {
-    return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/avatar.jpg', $archive);
+    return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/avatar.webp', $archive);
 }
 
 function slowcloud_comment_avatar_url($comment, int $size = 32, ?string $default = null, ?string $rating = null): string
