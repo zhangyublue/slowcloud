@@ -714,6 +714,62 @@ function themeConfig($form)
     );
     $form->addInput(slowcloud_assign_settings_group($headerHeight, 'header-display', 'Header 展示设置'));
 
+    $headerMenuMode = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'headerMenuMode',
+        [
+            'combined' => _t('组合导航'),
+        ],
+        'combined',
+        _t('Header 导航模式'),
+        _t('自动菜单与自定义菜单会同时显示，顺序由下方“导航显示顺序”控制。')
+    );
+    $form->addInput(slowcloud_assign_settings_group($headerMenuMode, 'header-menu', 'Header 导航设置'));
+
+    $headerAutoMenuSources = new \Typecho\Widget\Helper\Form\Element\Checkbox(
+        'headerAutoMenuSources',
+        [
+            'home' => _t('首页'),
+            'timeline' => _t('时光轴'),
+            'categories' => _t('分类'),
+            'friend-links' => _t('友链'),
+            'social-links' => _t('社交平台'),
+            'latest-posts' => _t('最新文章'),
+            'pages' => _t('独立页面'),
+        ],
+        ['home', 'timeline', 'categories', 'friend-links', 'social-links', 'latest-posts', 'pages'],
+        _t('自动菜单内容'),
+        _t('分类、友链、社交平台和最新文章会自动作为带子项的菜单；数据分别读取站点分类、友链和社交平台设置、最新发布文章。')
+    );
+    $form->addInput(slowcloud_assign_settings_group($headerAutoMenuSources, 'header-menu', 'Header 导航设置'));
+
+    $headerLatestPostCount = new \Typecho\Widget\Helper\Form\Element\Text(
+        'headerLatestPostCount',
+        null,
+        '5',
+        _t('最新文章数量'),
+        _t('自动菜单启用“最新文章”时显示的文章数，范围为 1 到 20。')
+    );
+    $headerLatestPostCount->addRule('isInteger', _t('请填写整数'));
+    $form->addInput(slowcloud_assign_settings_group($headerLatestPostCount, 'header-menu', 'Header 导航设置'));
+
+    $headerMenuOrder = new \Typecho\Widget\Helper\Form\Element\Text(
+        'headerMenuOrder',
+        null,
+        'home,timeline,categories,friend-links,social-links,latest-posts,pages,custom',
+        _t('导航显示顺序'),
+        _t('以逗号分隔：home（首页）、timeline（时光轴）、categories（分类）、friend-links（友链）、social-links（社交平台）、latest-posts（最新文章）、pages（独立页面）、custom（自定义菜单）。未写的已启用自动项会排在最后。')
+    );
+    $form->addInput(slowcloud_assign_settings_group($headerMenuOrder, 'header-menu', 'Header 导航设置'));
+
+    $headerCustomMenu = new \Typecho\Widget\Helper\Form\Element\Textarea(
+        'headerCustomMenu',
+        null,
+        '',
+        _t('自定义菜单项'),
+        _t('每行一项，格式为 菜单名称|链接；子项使用 父菜单 > 子菜单|链接。例如：关于|/about 和 资源 > GitHub|https://github.com/your-name。')
+    );
+    $form->addInput(slowcloud_assign_settings_group($headerCustomMenu, 'header-menu', 'Header 导航设置'));
+
     $siteWidth = new \Typecho\Widget\Helper\Form\Element\Text(
         'siteWidth',
         null,
@@ -3170,6 +3226,202 @@ function slowcloud_timeline_page(): ?array
     }
 
     return null;
+}
+
+function slowcloud_header_menu_items($archive): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $mode = 'combined';
+
+    try {
+        if ($mode === 'combined') {
+            $items = slowcloud_auto_header_menu_items(
+                $archive,
+                array_values(array_unique(array_merge(
+                    ['timeline'],
+                    slowcloud_header_menu_sources($options->headerAutoMenuSources ?? [])
+                ))),
+                (int) ($options->headerLatestPostCount ?? 5)
+            );
+            $items['custom'] = slowcloud_custom_header_menu_items((string) ($options->headerCustomMenu ?? ''));
+            return slowcloud_order_header_menu_items($items, (string) ($options->headerMenuOrder ?? ''));
+        }
+    } catch (\Throwable $e) {
+        // Navigation must not make the site unavailable when a data source is unavailable.
+    }
+
+    return slowcloud_default_header_menu_items($archive);
+}
+
+function slowcloud_header_menu_sources($value): array
+{
+    if (is_array($value)) {
+        return array_values(array_filter($value, 'is_string'));
+    }
+
+    $value = trim((string) $value);
+    if ($value === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (is_array($decoded)) {
+        return array_values(array_filter($decoded, 'is_string'));
+    }
+
+    return array_values(array_filter(preg_split('/\s*,\s*/', $value) ?: [], 'strlen'));
+}
+
+function slowcloud_order_header_menu_items(array $groups, string $rawOrder): array
+{
+    $items = [];
+    $seen = [];
+    $order = preg_split('/\s*,\s*/', trim($rawOrder)) ?: [];
+    foreach ($order as $key) {
+        $key = trim($key);
+        if ($key === '' || isset($seen[$key]) || empty($groups[$key])) continue;
+        $items = array_merge($items, $groups[$key]);
+        $seen[$key] = true;
+    }
+    foreach ($groups as $key => $group) {
+        if (!isset($seen[$key]) && !empty($group)) $items = array_merge($items, $group);
+    }
+    return $items;
+}
+
+function slowcloud_default_header_menu_items($archive): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $items = [[
+        'name' => _t('首页'),
+        'url' => (string) ($options->siteUrl ?? ''),
+        'children' => [],
+    ]];
+    $timeline = slowcloud_timeline_page();
+    if ($timeline !== null) {
+        $items[] = ['name' => _t('时光轴'), 'url' => $timeline['permalink'], 'children' => []];
+    }
+
+    \Widget\Contents\Page\Rows::alloc()->to($pages);
+    while ($pages->next()) {
+        if ((string) $pages->template === 'timeline.php') {
+            continue;
+        }
+        $items[] = ['name' => (string) $pages->title, 'url' => (string) $pages->permalink, 'children' => []];
+    }
+
+    return $items;
+}
+
+function slowcloud_auto_header_menu_items($archive, array $sources, int $latestCount): array
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $groups = [];
+    if (in_array('home', $sources, true)) {
+        $groups['home'] = [['name' => _t('首页'), 'url' => (string) ($options->siteUrl ?? ''), 'children' => []]];
+    }
+    if (in_array('timeline', $sources, true)) {
+        $timeline = slowcloud_timeline_page();
+        if ($timeline !== null) {
+            $groups['timeline'] = [['name' => (string) $timeline['title'], 'url' => (string) $timeline['permalink'], 'children' => []]];
+        }
+    }
+    if (in_array('categories', $sources, true)) {
+        $categoryRows = [];
+        \Widget\Metas\Category\Rows::alloc()->to($categories);
+        while ($categories->next()) {
+            $categoryRows[] = [
+                'id' => (int) ($categories->mid ?? 0),
+                'parent' => (int) ($categories->parent ?? 0),
+                'name' => (string) $categories->name,
+                'url' => (string) $categories->permalink,
+                'children' => [],
+            ];
+        }
+        $children = slowcloud_header_menu_tree($categoryRows);
+        if ($children) $groups['categories'] = [['name' => _t('分类'), 'url' => '', 'children' => $children]];
+    }
+    if (in_array('friend-links', $sources, true)) {
+        $children = slowcloud_friend_links($archive);
+        if ($children) $groups['friend-links'] = [['name' => _t('友链'), 'url' => '', 'children' => $children]];
+    }
+    if (in_array('social-links', $sources, true)) {
+        $children = array_map(static function (array $link): array { return ['name' => $link['name'], 'url' => $link['url']]; }, array_merge(slowcloud_social_links($archive), slowcloud_custom_social_links($archive)));
+        if ($children) $groups['social-links'] = [['name' => _t('社交平台'), 'url' => '', 'children' => $children]];
+    }
+    if (in_array('latest-posts', $sources, true)) {
+        $children = [];
+        \Widget\Contents\Post\Recent::alloc(['pageSize' => max(1, min(20, $latestCount))])->to($posts);
+        while ($posts->next()) $children[] = ['name' => (string) $posts->title, 'url' => (string) $posts->permalink];
+        if ($children) $groups['latest-posts'] = [['name' => _t('最新文章'), 'url' => '', 'children' => $children]];
+    }
+    if (in_array('pages', $sources, true)) {
+        $groups['pages'] = array_values(array_filter(slowcloud_default_header_menu_items($archive), static function (array $item): bool {
+            return $item['name'] !== _t('首页');
+        }));
+    }
+    return $groups;
+}
+
+function slowcloud_header_menu_tree(array $items, int $parent = 0): array
+{
+    $tree = [];
+    foreach ($items as $item) {
+        if ((int) ($item['parent'] ?? 0) !== $parent) {
+            continue;
+        }
+        $item['children'] = slowcloud_header_menu_tree($items, (int) ($item['id'] ?? 0));
+        unset($item['id'], $item['parent']);
+        $tree[] = $item;
+    }
+    return $tree;
+}
+
+function slowcloud_render_header_submenu(array $items, string $charset): void
+{
+    if (empty($items)) {
+        return;
+    }
+
+    echo '<div class="slowcloud-site-nav__submenu">';
+    foreach ($items as $item) {
+        $hasChildren = !empty($item['children']);
+        echo '<div class="slowcloud-site-nav__submenu-item' . ($hasChildren ? ' slowcloud-site-nav__submenu-item--has-children' : '') . '">';
+        echo '<a href="' . htmlspecialchars((string) ($item['url'] ?? ''), ENT_QUOTES, $charset) . '">';
+        echo htmlspecialchars((string) ($item['name'] ?? ''), ENT_QUOTES, $charset);
+        if ($hasChildren) {
+            echo '<span class="slowcloud-site-nav__arrow" aria-hidden="true"></span>';
+        }
+        echo '</a>';
+        if ($hasChildren) {
+            slowcloud_render_header_submenu($item['children'], $charset);
+        }
+        echo '</div>';
+    }
+    echo '</div>';
+}
+
+function slowcloud_custom_header_menu_items(string $raw): array
+{
+    $items = [];
+    foreach (preg_split('/\r\n|\r|\n/', $raw) ?: [] as $line) {
+        $parts = array_map('trim', explode('|', $line, 2));
+        if (count($parts) !== 2 || $parts[0] === '' || !slowcloud_is_safe_link_url($parts[1])) continue;
+        $names = array_map('trim', explode('>', $parts[0], 2));
+        if (count($names) === 1 || $names[1] === '') {
+            $items[] = ['name' => $names[0], 'url' => $parts[1], 'children' => []];
+            continue;
+        }
+        $parent = $names[0];
+        $index = null;
+        foreach ($items as $key => $item) if ($item['name'] === $parent) { $index = $key; break; }
+        if ($index === null) {
+            $items[] = ['name' => $parent, 'url' => '', 'children' => []];
+            $index = count($items) - 1;
+        }
+        $items[$index]['children'][] = ['name' => $names[1], 'url' => $parts[1]];
+    }
+    return $items;
 }
 
 function slowcloud_timeline_link($archive): string

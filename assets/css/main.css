@@ -219,7 +219,7 @@ img {
     margin-top: 0;
     margin-bottom: 0;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     min-height: var(--slowcloud-header-height);
     border-radius: 0;
     background:
@@ -275,13 +275,13 @@ img {
 .slowcloud-header-topbar {
     display: flex;
     justify-content: space-between;
-    gap: 18px;
+    gap: 10px;
 }
 
 .slowcloud-header-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 6px;
     flex-wrap: wrap;
     align-items: center;
 }
@@ -333,19 +333,120 @@ img {
 .slowcloud-site-nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 14px;
 }
 
-.slowcloud-site-nav a {
+.slowcloud-site-nav__item {
+    position: relative;
+}
+
+.slowcloud-site-nav a,
+.slowcloud-site-nav__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     padding: 6px 0;
     color: var(--slowcloud-header-chip-text);
     border: 0;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
     transition: color var(--slowcloud-motion-fast), opacity var(--slowcloud-motion-fast);
 }
 
-.slowcloud-site-nav a:hover {
+.slowcloud-site-nav__arrow {
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    transform-origin: center;
+    transition: transform var(--slowcloud-motion-fast);
+}
+
+.slowcloud-site-nav a:hover,
+.slowcloud-site-nav__trigger:hover,
+.slowcloud-site-nav__trigger:focus {
     color: var(--slowcloud-header-text);
     opacity: 0.72;
+}
+
+.slowcloud-site-nav__submenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 3;
+    display: none;
+    min-width: 150px;
+    padding: 6px 0;
+    border: 1px solid var(--slowcloud-header-chip-border);
+    background: var(--slowcloud-header-chip-bg);
+    backdrop-filter: blur(12px);
+}
+
+.slowcloud-site-nav__submenu a {
+    display: block;
+    margin: 0;
+    padding: 6px 12px;
+    white-space: nowrap;
+    transition: background var(--slowcloud-motion-fast), color var(--slowcloud-motion-fast);
+}
+
+.slowcloud-site-nav__submenu a:hover,
+.slowcloud-site-nav__submenu a:focus {
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--slowcloud-header-text);
+    opacity: 1;
+}
+
+.slowcloud-site-nav__submenu-item {
+    position: relative;
+}
+
+.slowcloud-site-nav__submenu-item > a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.slowcloud-site-nav__submenu-item > .slowcloud-site-nav__submenu {
+    top: 0;
+    right: auto;
+    left: calc(100% + 2px);
+}
+
+.slowcloud-site-nav__submenu-item--has-children::after {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 2px;
+    height: 100%;
+    content: "";
+}
+
+.slowcloud-site-nav__submenu-item > a > .slowcloud-site-nav__arrow {
+    transform: rotate(-45deg);
+    transition: none;
+}
+
+.slowcloud-site-nav__submenu-item--has-children:hover > .slowcloud-site-nav__submenu,
+.slowcloud-site-nav__submenu-item--has-children:focus-within > .slowcloud-site-nav__submenu {
+    display: grid;
+    gap: 4px;
+}
+
+.slowcloud-site-nav__item--has-children:hover > .slowcloud-site-nav__submenu,
+.slowcloud-site-nav__item--has-children:focus-within > .slowcloud-site-nav__submenu {
+    display: grid;
+    gap: 4px;
+}
+
+.slowcloud-site-nav__item--has-children:hover > a > .slowcloud-site-nav__arrow,
+.slowcloud-site-nav__item--has-children:hover > .slowcloud-site-nav__trigger > .slowcloud-site-nav__arrow,
+.slowcloud-site-nav__item--has-children:focus-within > a > .slowcloud-site-nav__arrow,
+.slowcloud-site-nav__item--has-children:focus-within > .slowcloud-site-nav__trigger > .slowcloud-site-nav__arrow {
+    transform: rotate(225deg) translateY(-2px);
 }
 
 .slowcloud-theme-toggle {
@@ -2072,6 +2173,16 @@ img {
 
     .slowcloud-site-nav {
         justify-content: flex-start;
+    }
+
+    .slowcloud-site-nav__submenu {
+        right: auto;
+        left: 0;
+    }
+
+    .slowcloud-site-nav__submenu-item > .slowcloud-site-nav__submenu {
+        right: auto;
+        left: calc(100% + 2px);
     }
 
     .slowcloud-theme-toggle {

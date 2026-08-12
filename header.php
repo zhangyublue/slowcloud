@@ -5,6 +5,7 @@
 <?php $slowcloudTabTitle = slowcloud_tab_title($this); ?>
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
 <?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
+<?php $slowcloudHeaderMenuItems = slowcloud_header_menu_items($this); ?>
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
 <?php $slowcloudSeoContext = slowcloud_seo_context($this); ?>
 <?php slowcloud_set_stats_context($this); ?>
@@ -46,15 +47,19 @@
 
                 <div class="slowcloud-header-actions">
                     <nav class="slowcloud-site-nav" aria-label="<?php _e('主导航'); ?>">
-                        <a href="<?php $this->options->siteUrl(); ?>"><?php _e('首页'); ?></a>
-                        <?php if ($slowcloudTimelinePage !== null): ?>
-                            <a href="<?php echo htmlspecialchars($slowcloudTimelinePage['permalink'], ENT_QUOTES, $this->options->charset); ?>"><?php _e('时光轴'); ?></a>
-                        <?php endif; ?>
-                        <?php \Widget\Contents\Page\Rows::alloc()->to($pages); ?>
-                        <?php while ($pages->next()): ?>
-                            <?php if ((string) $pages->template === 'timeline.php') continue; ?>
-                            <a href="<?php $pages->permalink(); ?>"><?php $pages->title(); ?></a>
-                        <?php endwhile; ?>
+                        <?php foreach ($slowcloudHeaderMenuItems as $item): ?>
+                            <?php $hasChildren = !empty($item['children']); ?>
+                            <div class="slowcloud-site-nav__item<?php if ($hasChildren): ?> slowcloud-site-nav__item--has-children<?php endif; ?>">
+                                <?php if (($item['url'] ?? '') !== ''): ?>
+                                    <a href="<?php echo htmlspecialchars((string) $item['url'], ENT_QUOTES, $this->options->charset); ?>"><?php echo htmlspecialchars((string) $item['name'], ENT_QUOTES, $this->options->charset); ?><?php if ($hasChildren): ?><span class="slowcloud-site-nav__arrow" aria-hidden="true"></span><?php endif; ?></a>
+                                <?php else: ?>
+                                    <button type="button" class="slowcloud-site-nav__trigger"<?php if ($hasChildren): ?> aria-haspopup="true"<?php endif; ?>><?php echo htmlspecialchars((string) $item['name'], ENT_QUOTES, $this->options->charset); ?><?php if ($hasChildren): ?><span class="slowcloud-site-nav__arrow" aria-hidden="true"></span><?php endif; ?></button>
+                                <?php endif; ?>
+                                <?php if ($hasChildren): ?>
+                                    <?php slowcloud_render_header_submenu($item['children'], $this->options->charset); ?>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
                     </nav>
 
                     <button
