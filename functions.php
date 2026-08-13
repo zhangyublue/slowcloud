@@ -3364,7 +3364,14 @@ function slowcloud_auto_header_menu_items($archive, array $sources, int $latestC
         if ($children) $groups['friend-links'] = [['name' => _t('友链'), 'url' => '', 'children' => $children]];
     }
     if (in_array('social-links', $sources, true)) {
-        $children = array_map(static function (array $link): array { return ['name' => $link['name'], 'url' => $link['url']]; }, slowcloud_social_links($archive));
+        $children = array_map(static function (array $link): array {
+            return [
+                'name' => $link['name'],
+                'url' => $link['url'],
+                'iconType' => $link['iconType'] ?? '',
+                'icon' => $link['icon'] ?? '',
+            ];
+        }, slowcloud_social_links($archive));
         if ($children) $groups['social-links'] = [['name' => _t('社交平台'), 'url' => '', 'children' => $children]];
     }
     if (in_array('latest-posts', $sources, true)) {
@@ -3406,6 +3413,11 @@ function slowcloud_render_header_submenu(array $items, string $charset): void
         $hasChildren = !empty($item['children']);
         echo '<div class="slowcloud-site-nav__submenu-item' . ($hasChildren ? ' slowcloud-site-nav__submenu-item--has-children' : '') . '">';
         echo '<a href="' . htmlspecialchars((string) ($item['url'] ?? ''), ENT_QUOTES, $charset) . '">';
+        if (($item['iconType'] ?? '') === 'svg' && ($item['icon'] ?? '') !== '') {
+            echo '<span class="slowcloud-site-nav__icon slowcloud-site-nav__icon--svg" aria-hidden="true">' . $item['icon'] . '</span>';
+        } elseif (($item['iconType'] ?? '') === 'class' && ($item['icon'] ?? '') !== '') {
+            echo '<span class="iconfont slowcloud-site-nav__icon ' . htmlspecialchars((string) $item['icon'], ENT_QUOTES, $charset) . '" aria-hidden="true"></span>';
+        }
         echo htmlspecialchars((string) ($item['name'] ?? ''), ENT_QUOTES, $charset);
         if ($hasChildren) {
             echo '<span class="slowcloud-site-nav__arrow" aria-hidden="true"></span>';

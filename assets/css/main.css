@@ -496,8 +496,37 @@ img {
 .slowcloud-site-nav__submenu-item > a {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 14px;
+    justify-content: flex-start;
+    gap: 0;
+}
+
+.slowcloud-site-nav__icon {
+    display: inline-flex;
+    flex: 0 0 1em;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    margin-right: 3px;
+    font-size: 1em;
+    line-height: 1;
+    color: currentColor;
+}
+
+.slowcloud-site-nav__icon--svg svg {
+    width: 1em;
+    height: 1em;
+    display: block;
+    vertical-align: middle;
+}
+
+.slowcloud-site-nav__icon--svg svg,
+.slowcloud-site-nav__icon--svg svg * {
+    fill: currentColor !important;
+}
+
+.slowcloud-site-nav__submenu-item > a > .slowcloud-site-nav__arrow {
+    margin-left: auto;
 }
 
 .slowcloud-site-nav__submenu-item > .slowcloud-site-nav__submenu {
