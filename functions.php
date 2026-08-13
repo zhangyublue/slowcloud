@@ -1575,6 +1575,11 @@ function slowcloud_seo_absolute_url($archive, string $url): string
     return \Typecho\Common::url(ltrim($url, '/'), (string) ($options->siteUrl ?? ''));
 }
 
+function slowcloud_seo_https_url(string $url): string
+{
+    return preg_replace('#^http://#i', 'https://', trim($url)) ?: '';
+}
+
 function slowcloud_seo_strip_url_query(string $url): string
 {
     $parts = parse_url($url);
@@ -1704,8 +1709,21 @@ function slowcloud_seo_canonical($archive): string
 function slowcloud_seo_description($archive): string
 {
     $description = '';
+    $options = $archive->options ?? \Widget\Options::alloc();
 
-    if (slowcloud_seo_is($archive, 'single')) {
+    if (slowcloud_seo_is($archive, 'index') || slowcloud_seo_is($archive, 'front')) {
+        $description = trim((string) ($options->description ?? ''));
+    }
+
+    if ($description === '' && slowcloud_seo_is($archive, 'category')) {
+        $categoryName = slowcloud_seo_category_name($archive);
+        if ($categoryName !== '') {
+            $siteName = trim((string) (($archive->options->title ?? '') ?: '本站'));
+            $description = $siteName . '中关于“' . $categoryName . '”的文章、教程与记录。';
+        }
+    }
+
+    if ($description === '' && slowcloud_seo_is($archive, 'single')) {
         $description = slowcloud_field_value($archive, 'seoDescription');
     }
 
@@ -1721,7 +1739,6 @@ function slowcloud_seo_description($archive): string
         $description = slowcloud_intro($archive);
     }
 
-    $options = $archive->options ?? \Widget\Options::alloc();
     if ($description === '') {
         $description = (string) ($options->description ?? '');
     }
@@ -1818,7 +1835,7 @@ function slowcloud_seo_image_object($archive, string $url, string $alt = ''): ar
 {
     $image = [
         '@type' => 'ImageObject',
-        'url' => $url,
+        'url' => slowcloud_seo_https_url($url),
     ];
 
     $dimensions = slowcloud_image_dimensions($archive, $url);
@@ -1840,6 +1857,10 @@ function slowcloud_seo_image($archive): string
         $image = slowcloud_poster($archive);
     }
 
+    if ($image === '' && (slowcloud_seo_is($archive, 'index') || slowcloud_seo_is($archive, 'front'))) {
+        $image = slowcloud_author_avatar($archive);
+    }
+
     if ($image === '') {
         $image = slowcloud_header_background($archive);
     }
@@ -1848,7 +1869,7 @@ function slowcloud_seo_image($archive): string
         $image = slowcloud_logo_url($archive);
     }
 
-    return slowcloud_seo_absolute_url($archive, $image);
+    return slowcloud_seo_https_url(slowcloud_seo_absolute_url($archive, $image));
 }
 
 function slowcloud_seo_datetime($value): string
@@ -1876,6 +1897,19 @@ function slowcloud_seo_term_names($terms): array
     }
 
     return array_values($names);
+}
+
+function slowcloud_seo_category_name($archive): string
+{
+    if (!slowcloud_seo_is($archive, 'category') || !method_exists($archive, 'archiveTitle')) {
+        return '';
+    }
+
+    $name = slowcloud_capture_output(static function () use ($archive): void {
+        $archive->archiveTitle(['category' => '%s'], '', '');
+    });
+
+    return slowcloud_seo_clean_text($name, 120);
 }
 
 function slowcloud_seo_word_count($archive): int
@@ -1971,6 +2005,11 @@ function slowcloud_seo_context($archive): array
     $customTitle = $isSingle ? slowcloud_seo_clean_text(slowcloud_field_value($archive, 'seoTitle'), 120) : '';
     if ($customTitle !== '') {
         $archiveTitle = $customTitle;
+    }
+
+    $categoryName = slowcloud_seo_category_name($archive);
+    if ($categoryName !== '') {
+        $archiveTitle = $categoryName . '文章';
     }
 
     $title = $archiveTitle !== '' && !$isIndex
