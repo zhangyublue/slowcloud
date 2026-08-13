@@ -53,6 +53,7 @@
                 <?php endif; ?>
 
                 <div class="slowcloud-comment-field">
+                    <?php if (slowcloud_seo_is($this, 'post')): ?>
                     <div class="slowcloud-comment-tools">
                         <span
                             class="slowcloud-comment-emoji-toggle iconfont icon-slowcloudemoji"
@@ -121,6 +122,7 @@
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                     <textarea rows="5" name="text" id="textarea" placeholder="<?php _e('写点什么吧…'); ?>" required><?php $this->remember('text'); ?></textarea>
                 </div>
 

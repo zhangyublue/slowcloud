@@ -1922,6 +1922,16 @@ function slowcloud_seo_word_count($archive): int
     return $text !== '' ? \Typecho\Common::strLen($text) : 0;
 }
 
+function slowcloud_post_has_code_blocks($archive): bool
+{
+    if (!slowcloud_seo_is($archive, 'post')) {
+        return false;
+    }
+
+    $content = (string) ($archive->text ?? '');
+    return preg_match('/```|<pre\b|<code\b/i', $content) === 1;
+}
+
 function slowcloud_seo_primary_category_data($archive): array
 {
     $categories = $archive->categories ?? [];

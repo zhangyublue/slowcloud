@@ -9,6 +9,7 @@
 <?php $slowcloudHeaderMenuItems = slowcloud_header_menu_items($this); ?>
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
 <?php $slowcloudSeoContext = slowcloud_seo_context($this); ?>
+<?php $slowcloudPostHasCodeBlocks = slowcloud_post_has_code_blocks($this); ?>
 <?php slowcloud_set_stats_context($this); ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -28,10 +29,12 @@
     <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('style.css', $this), ENT_QUOTES, $this->options->charset); ?>">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/css/main.css', $this), ENT_QUOTES, $this->options->charset); ?>">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/css/content-render.css', $this), ENT_QUOTES, $this->options->charset); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/line-numbers/prism-line-numbers.css', $this), ENT_QUOTES, $this->options->charset); ?>">
-    <link id="slowcloud-prism-theme-coy" rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/themes/prism-coy.css', $this), ENT_QUOTES, $this->options->charset); ?>">
-    <link id="slowcloud-prism-theme-okaidia" rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/themes/prism-okaidia.css', $this), ENT_QUOTES, $this->options->charset); ?>">
-    <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/css/code-highlight.css', $this), ENT_QUOTES, $this->options->charset); ?>">
+    <?php if ($slowcloudPostHasCodeBlocks): ?>
+        <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/plugins/line-numbers/prism-line-numbers.css', $this), ENT_QUOTES, $this->options->charset); ?>">
+        <link id="slowcloud-prism-theme-coy" rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/themes/prism-coy.css', $this), ENT_QUOTES, $this->options->charset); ?>">
+        <link id="slowcloud-prism-theme-okaidia" rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/typecho/prism/themes/prism-okaidia.css', $this), ENT_QUOTES, $this->options->charset); ?>">
+        <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/css/code-highlight.css', $this), ENT_QUOTES, $this->options->charset); ?>">
+    <?php endif; ?>
     <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/iconfont/iconfont.css', $this), ENT_QUOTES, $this->options->charset); ?>">
     <?php slowcloud_render_typecho_header($this, 'description=&keywords=&social='); ?>
 </head>
