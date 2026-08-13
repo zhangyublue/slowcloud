@@ -3364,7 +3364,7 @@ function slowcloud_auto_header_menu_items($archive, array $sources, int $latestC
         if ($children) $groups['friend-links'] = [['name' => _t('友链'), 'url' => '', 'children' => $children]];
     }
     if (in_array('social-links', $sources, true)) {
-        $children = array_map(static function (array $link): array { return ['name' => $link['name'], 'url' => $link['url']]; }, array_merge(slowcloud_social_links($archive), slowcloud_custom_social_links($archive)));
+        $children = array_map(static function (array $link): array { return ['name' => $link['name'], 'url' => $link['url']]; }, slowcloud_social_links($archive));
         if ($children) $groups['social-links'] = [['name' => _t('社交平台'), 'url' => '', 'children' => $children]];
     }
     if (in_array('latest-posts', $sources, true)) {
