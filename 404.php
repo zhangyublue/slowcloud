@@ -17,6 +17,7 @@
                 <button type="submit"><?php _e('搜索'); ?></button>
             </form>
         </div>
+        <?php if (slowcloud_basic_layout($this) === 'classic'): ?><?php $this->need('components/site-footer.php'); ?><?php endif; ?>
     </section>
 </main>
 

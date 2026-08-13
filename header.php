@@ -4,6 +4,7 @@
 <?php $slowcloudSiteWidth = slowcloud_site_width($this); ?>
 <?php $slowcloudTabTitle = slowcloud_tab_title($this); ?>
 <?php $slowcloudThemeMode = slowcloud_theme_mode($this); ?>
+<?php $slowcloudBasicLayout = slowcloud_basic_layout($this); ?>
 <?php $slowcloudTimelinePage = slowcloud_timeline_page(); ?>
 <?php $slowcloudHeaderMenuItems = slowcloud_header_menu_items($this); ?>
 <?php $slowcloudLogoUrl = slowcloud_logo_url($this); ?>
@@ -34,16 +35,41 @@
     <link rel="stylesheet" href="<?php echo htmlspecialchars(slowcloud_theme_versioned_theme_url('assets/iconfont/iconfont.css', $this), ENT_QUOTES, $this->options->charset); ?>">
     <?php slowcloud_render_typecho_header($this, 'description=&keywords=&social='); ?>
 </head>
-<body class="slowcloud-body" data-slowcloud-theme-mode="<?php echo htmlspecialchars($slowcloudThemeMode, ENT_QUOTES, $this->options->charset); ?>">
+<body class="slowcloud-body<?php if ($slowcloudBasicLayout === 'classic'): ?> slowcloud-body--classic<?php endif; ?>" data-slowcloud-theme-mode="<?php echo htmlspecialchars($slowcloudThemeMode, ENT_QUOTES, $this->options->charset); ?>">
 <div class="slowcloud-top-loader" data-slowcloud-top-loader aria-hidden="true">
     <span class="slowcloud-top-loader__beam"></span>
 </div>
-<div class="slowcloud-site-wrap" style="--slowcloud-container: <?php echo htmlspecialchars($slowcloudSiteWidth, ENT_QUOTES, $this->options->charset); ?>;">
+<div class="slowcloud-quick-tools" aria-label="<?php _e('页面工具'); ?>">
+    <button
+        type="button"
+        class="slowcloud-quick-tools__button"
+        data-slowcloud-theme-toggle
+        aria-pressed="false"
+        aria-label="<?php _e('切换黑夜白天模式'); ?>"
+        title="<?php _e('切换黑夜白天模式'); ?>"
+    >
+        <span class="slowcloud-theme-toggle__icon" aria-hidden="true">◐</span>
+    </button>
+    <button
+        type="button"
+        class="slowcloud-quick-tools__button slowcloud-quick-tools__button--top"
+        data-slowcloud-back-to-top
+        aria-label="<?php _e('回到顶部'); ?>"
+        title="<?php _e('回到顶部'); ?>"
+        hidden
+    >
+        <span class="slowcloud-quick-tools__top-icon" aria-hidden="true"></span>
+    </button>
+</div>
+<div class="slowcloud-site-wrap" style="--slowcloud-container: <?php echo htmlspecialchars($slowcloudSiteWidth, ENT_QUOTES, $this->options->charset); ?>; --slowcloud-header-height: <?php echo htmlspecialchars($slowcloudHeaderHeight, ENT_QUOTES, $this->options->charset); ?>;">
     <header class="slowcloud-site-header<?php if ($slowcloudHeaderBackground !== ''): ?> slowcloud-site-header--has-cover<?php endif; ?>"<?php if ($slowcloudHeaderBackground !== ''): ?> data-slowcloud-cover="<?php echo htmlspecialchars($slowcloudHeaderBackground, ENT_QUOTES, $this->options->charset); ?>"<?php endif; ?> style="--slowcloud-header-height: <?php echo htmlspecialchars($slowcloudHeaderHeight, ENT_QUOTES, $this->options->charset); ?>;<?php if ($slowcloudHeaderBackground !== ''): ?> --slowcloud-header-cover-image: url('<?php echo htmlspecialchars($slowcloudHeaderBackground, ENT_QUOTES, $this->options->charset); ?>');<?php endif; ?>">
         <div class="slowcloud-header-overlay"></div>
         <div class="slowcloud-header-inner">
             <div class="slowcloud-header-topbar">
-                <a class="slowcloud-brand-title" href="<?php $this->options->siteUrl(); ?>"><?php $this->options->title(); ?></a>
+                <div class="slowcloud-brand-wrap">
+                    <a class="slowcloud-brand-title" href="<?php $this->options->siteUrl(); ?>"><?php $this->options->title(); ?></a>
+                    <span class="slowcloud-brand-description"><?php echo slowcloud_intro($this); ?></span>
+                </div>
 
                 <div class="slowcloud-header-actions">
                     <nav class="slowcloud-site-nav" aria-label="<?php _e('主导航'); ?>">
@@ -62,15 +88,6 @@
                         <?php endforeach; ?>
                     </nav>
 
-                    <button
-                        type="button"
-                        class="slowcloud-theme-toggle"
-                        data-slowcloud-theme-toggle
-                        aria-pressed="false"
-                        aria-label="<?php _e('切换黑夜白天模式'); ?>"
-                    >
-                        <span class="slowcloud-theme-toggle__icon" aria-hidden="true">◐</span>
-                    </button>
                 </div>
             </div>
 

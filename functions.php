@@ -676,6 +676,18 @@ function themeConfig($form)
 {
     $options = \Widget\Options::alloc();
 
+    $basicLayout = new \Typecho\Widget\Helper\Form\Element\Radio(
+        'basicLayout',
+        [
+            'default' => _t('默认选项'),
+            'classic' => _t('三栏经典布局'),
+        ],
+        'default',
+        _t('基本布局'),
+        _t('默认选项：Slowcloud 默认布局；三栏经典布局：固定导航栏，三栏独立滚动。')
+    );
+    $form->addInput(slowcloud_assign_settings_group($basicLayout, 'basic-layout', '基本布局'));
+
     $tabTitle = new \Typecho\Widget\Helper\Form\Element\Text(
         'tabTitle',
         null,
@@ -2896,6 +2908,12 @@ function slowcloud_theme_mode($archive): string
     }
 
     return 'system';
+}
+
+function slowcloud_basic_layout($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    return trim((string) ($options->basicLayout ?? 'default')) === 'classic' ? 'classic' : 'default';
 }
 
 function slowcloud_author_avatar($archive): string

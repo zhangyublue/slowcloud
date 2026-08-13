@@ -38,6 +38,7 @@ $this->need('header.php');
             <?php endif; ?>
 
             <?php $this->need('components/pagination.php'); ?>
+            <?php if (slowcloud_basic_layout($this) === 'classic'): ?><?php $this->need('components/site-footer.php'); ?><?php endif; ?>
         </section>
 
         <section class="slowcloud-home-band slowcloud-home-band-side">
@@ -91,6 +92,7 @@ $this->need('header.php');
             <?php endif; ?>
 
             <?php $this->need('components/pagination.php'); ?>
+            <?php if (slowcloud_basic_layout($this) === 'classic'): ?><?php $this->need('components/site-footer.php'); ?><?php endif; ?>
         </section>
 
         <?php if (slowcloud_show_sidebar($this)): ?>

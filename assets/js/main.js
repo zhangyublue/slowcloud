@@ -2,6 +2,7 @@
     const root = document.documentElement;
     const body = document.body;
     const toggle = document.querySelector('[data-slowcloud-theme-toggle]');
+    const backToTop = document.querySelector('[data-slowcloud-back-to-top]');
     const coverHeader = document.querySelector('[data-slowcloud-cover]');
     const categoryLists = document.querySelectorAll('.category-list');
     const topLoader = document.querySelector('[data-slowcloud-top-loader]');
@@ -191,6 +192,33 @@
             storage.setItem(storageKey, nextTheme);
             applyTheme(nextTheme);
         });
+    }
+
+    if (backToTop) {
+        const classicContent = document.querySelector('.slowcloud-body--classic .slowcloud-home-band-stream, .slowcloud-body--classic .slowcloud-content-column');
+        const getScrollContainer = () => (
+            classicContent && window.matchMedia('(min-width: 961px)').matches ? classicContent : window
+        );
+        const getScrollTop = () => getScrollContainer() === window
+            ? (window.scrollY || document.documentElement.scrollTop || 0)
+            : classicContent.scrollTop;
+        const updateBackToTop = () => {
+            backToTop.hidden = getScrollTop() < 360;
+        };
+
+        window.addEventListener('scroll', updateBackToTop, { passive: true });
+        window.addEventListener('resize', updateBackToTop);
+        if (classicContent) {
+            classicContent.addEventListener('scroll', updateBackToTop, { passive: true });
+        }
+        backToTop.addEventListener('click', () => {
+            if (getScrollContainer() === window) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                classicContent.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        updateBackToTop();
     }
 
     const syncSystemTheme = (event) => {
