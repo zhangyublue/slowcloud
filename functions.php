@@ -900,7 +900,7 @@ function themeConfig($form)
         null,
         '',
         _t('自定义平台'),
-        _t('支持添加多条自定义平台，展示在“其他平台”中。每条包含名称、SVG 图标和跳转地址。')
+        _t('支持添加多条自定义平台，展示在“社交平台”中。每条包含名称、SVG 图标和跳转地址。')
     );
     $customPlatformLinks->setAttribute('data-slowcloud-link-list', 'customPlatformLinks');
     $customPlatformLinks->setAttribute('data-slowcloud-link-add-label', _t('添加平台'));
