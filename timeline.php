@@ -106,6 +106,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
                 <p><?php _e('还没有文章，等第一篇内容出现后，这里会自动生成时光轴。'); ?></p>
             </article>
         <?php endif; ?>
+        <?php if (slowcloud_basic_layout($this) === 'classic'): ?><?php $this->need('components/site-footer.php'); ?><?php endif; ?>
     </section>
 </main>
 

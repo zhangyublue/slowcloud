@@ -24,6 +24,7 @@
         </article>
 
         <?php $this->need('comments.php'); ?>
+        <?php if (slowcloud_basic_layout($this) === 'classic'): ?><?php $this->need('components/site-footer.php'); ?><?php endif; ?>
     </section>
 
     <?php if (slowcloud_show_sidebar($this)): ?>
