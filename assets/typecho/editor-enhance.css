@@ -2,6 +2,22 @@
     position: relative;
 }
 
+#wmd-button-bar .wmd-button-row li.slowcloud-indent-button span {
+    position: relative;
+    background: none;
+}
+
+#wmd-button-bar .wmd-button-row li.slowcloud-indent-button span::before {
+    position: absolute;
+    inset: 0;
+    color: #666;
+    content: "首";
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+}
+
 #wmd-button-bar .wmd-button-row li.slowcloud-heading-enhanced.active,
 #wmd-button-bar .wmd-button-row li.slowcloud-heading-enhanced[aria-expanded="true"] {
     background-color: #E9E9E6;

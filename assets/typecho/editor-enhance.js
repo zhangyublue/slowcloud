@@ -985,6 +985,19 @@
         }
     }
 
+    function interceptIndentButton() {
+        var indentButton = document.getElementById('wmd-indent-button');
+
+        if (!indentButton || indentButton.getAttribute('data-slowcloud-indent') === '1') {
+            return;
+        }
+
+        indentButton.setAttribute('data-slowcloud-indent', '1');
+        indentButton.classList.add('slowcloud-indent-button');
+        indentButton.title = labels.indent || '插入两个全角空格';
+        indentButton.setAttribute('aria-label', indentButton.title);
+    }
+
     function bindTocField() {
         tocInputs().forEach(function (input) {
             if (input.getAttribute('data-slowcloud-toc-bound') === '1') {
@@ -1140,6 +1153,7 @@
         applyDraftFieldValues();
         interceptHeadingButton();
         interceptCodeButton();
+        interceptIndentButton();
         bindThemeFields();
         bindTocField();
         bindPreviewTocRefresh();
@@ -1155,7 +1169,18 @@
             highlightPreviewCode();
         });
 
-        activeEditor.hooks.chain('makeButton', function (buttons) {
+        activeEditor.hooks.chain('makeButton', function (buttons, makeButton, bindCommand) {
+            if (!buttons.indent && typeof makeButton === 'function' && typeof bindCommand === 'function') {
+                buttons.indent = makeButton(
+                    'wmd-indent-button',
+                    labels.indent || '插入两个全角空格',
+                    '0px',
+                    bindCommand(function (chunk) {
+                        chunk.startTag = '　　';
+                    })
+                );
+            }
+
             window.setTimeout(init, 0);
             return buttons;
         });
