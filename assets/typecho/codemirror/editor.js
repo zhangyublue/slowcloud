@@ -157,6 +157,33 @@ export function mountSlowcloudEditor(options) {
         });
     }
 
+    function attachPreviewAnchors() {
+        preview.querySelectorAll('span.line[data-start]').forEach(marker => {
+            const originalLine = Number(marker.dataset.startOriginal);
+            const parserLine = Number(marker.dataset.start);
+            marker.dataset.slowcloudLine = String((Number.isInteger(originalLine) ? originalLine : parserLine) + 1);
+        });
+    }
+
+    function syncPreviewToEditor() {
+        if (!root.classList.contains('slowcloud-cm-fullscreen')) return;
+        const scroller = view.scrollDOM;
+        if (scroller.scrollTop <= 1) {
+            preview.scrollTop = 0;
+            return;
+        }
+        const topLine = view.lineBlockAtHeight(scroller.scrollTop).from;
+        const lineNumber = view.state.doc.lineAt(topLine).number;
+        const anchors = Array.from(preview.querySelectorAll('span.line[data-slowcloud-line]'));
+        let target = anchors[0];
+
+        anchors.forEach(anchor => {
+            if (Number(anchor.dataset.slowcloudLine) <= lineNumber) target = anchor;
+        });
+
+        if (target) preview.scrollTop = Math.max(0, target.offsetTop - 8);
+    }
+
     const state = EditorState.create({
         doc: textarea.value,
         extensions: [
@@ -220,6 +247,8 @@ export function mountSlowcloudEditor(options) {
 
         if (window.DOMPurify) html = window.DOMPurify.sanitize(html, {USE_PROFILES: {html: true}});
         preview.innerHTML = html;
+        attachPreviewAnchors();
+        if (root.classList.contains('slowcloud-cm-fullscreen')) requestAnimationFrame(syncPreviewToEditor);
         preview.dispatchEvent(new CustomEvent('slowcloud:preview-refresh', {bubbles: true}));
     }
 
@@ -317,7 +346,10 @@ export function mountSlowcloudEditor(options) {
                 const label = fullscreen ? '退出分栏' : '分栏全屏';
                 button.title = label;
                 button.setAttribute('aria-label', label);
-                requestAnimationFrame(ensureVisibleLines);
+                requestAnimationFrame(() => {
+                    ensureVisibleLines();
+                    syncPreviewToEditor();
+                });
             });
         }
         toolbar.appendChild(button);
@@ -340,11 +372,17 @@ export function mountSlowcloudEditor(options) {
     form.addEventListener('submit', () => { textarea.value = contentForSave(view.state.doc.toString()); });
     root.querySelector('.slowcloud-cm-divider').addEventListener('mousedown', event => {
         event.preventDefault();
-        const move = e => { const rect = root.querySelector('.slowcloud-cm-workspace').getBoundingClientRect();
-            preview.style.width = Math.max(240, Math.min(rect.width - 240, rect.right - e.clientX)) + 'px'; };
+        const workspace = root.querySelector('.slowcloud-cm-workspace');
+        const move = e => {
+            const rect = workspace.getBoundingClientRect();
+            const dividerWidth = 6;
+            const leftWidth = Math.max(240, Math.min(rect.width - dividerWidth - 240, e.clientX - rect.left));
+            workspace.style.gridTemplateColumns = leftWidth + 'px ' + dividerWidth + 'px minmax(240px, 1fr)';
+        };
         const stop = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); };
         document.addEventListener('mousemove', move); document.addEventListener('mouseup', stop);
     });
+    view.scrollDOM.addEventListener('scroll', () => requestAnimationFrame(syncPreviewToEditor), {passive: true});
     renderPreview(textarea.value);
     updateCount(textarea.value);
     requestAnimationFrame(ensureVisibleLines);

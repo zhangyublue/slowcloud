@@ -577,13 +577,24 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
     display: grid;
     grid-template-columns: minmax(240px, 1fr) 6px minmax(240px, 1fr);
     height: calc(100vh - 48px);
+    min-width: 0;
 }
 
 .slowcloud-cm-fullscreen .slowcloud-cm-edit,
 .slowcloud-cm-fullscreen .slowcloud-cm-preview {
     display: block;
     min-height: 0;
+    min-width: 0;
     height: 100%;
+}
+
+.slowcloud-cm-fullscreen #wmd-preview.slowcloud-editor-preview {
+    margin: 0;
+    padding: 0 18px;
+}
+
+.slowcloud-cm-fullscreen #wmd-preview.slowcloud-editor-preview > :first-child {
+    margin-top: 0;
 }
 
 .slowcloud-cm-fullscreen .slowcloud-cm-edit .cm-editor,
