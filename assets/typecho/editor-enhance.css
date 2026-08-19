@@ -365,3 +365,184 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
 html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .slowcloud-code-window pre[class*="language-"].line-numbers .line-numbers-rows > span::before {
     color: #858a92;
 }
+#wmd-button-bar,
+.wmd-edittab {
+    display: none !important;
+}
+
+.slowcloud-cm-editor {
+    position: relative;
+    margin: 1em 0;
+    border: 1px solid #D9D9D6;
+    background: #FFF;
+}
+
+.slowcloud-cm-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px;
+    border-bottom: 1px solid #F0F0EC;
+    background: #FAFAF8;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    color: #65707C;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command .iconfont {
+    color: currentColor;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command:hover,
+.slowcloud-cm-toolbar .slowcloud-cm-command:focus {
+    color: #467B96;
+}
+
+.slowcloud-cm-heading-control {
+    position: relative;
+}
+
+.slowcloud-cm-heading-menu {
+    position: absolute;
+    z-index: 1003;
+    top: 29px;
+    left: 0;
+    display: none;
+    grid-template-columns: repeat(6, 30px);
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid #D9D9D6;
+    border-radius: 2px;
+    background: #FFF;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+}
+
+.slowcloud-cm-heading-menu .slowcloud-cm-command .iconfont {
+    font-size: 20px;
+}
+
+.slowcloud-cm-heading-control:hover .slowcloud-cm-heading-menu,
+.slowcloud-cm-heading-control:focus-within .slowcloud-cm-heading-menu {
+    display: grid;
+}
+
+.slowcloud-cm-count {
+    margin-left: auto;
+    padding: 0 6px;
+    color: #999;
+    font-size: 12px;
+    line-height: 25px;
+    white-space: nowrap;
+}
+
+.slowcloud-cm-workspace {
+    display: block;
+    height: 420px;
+}
+
+.slowcloud-cm-edit {
+    height: 420px;
+}
+
+.slowcloud-cm-edit .cm-editor {
+    height: 420px;
+    font-size: 14px;
+}
+
+.slowcloud-cm-edit .cm-scroller {
+    height: 420px;
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+.slowcloud-cm-edit .cm-editor,
+.slowcloud-cm-edit .cm-gutters {
+    color: #444;
+    background: #FFF;
+}
+
+.slowcloud-cm-edit .cm-scroller {
+    background: #FFF;
+}
+
+.slowcloud-cm-edit .cm-content {
+    background: transparent;
+}
+
+.slowcloud-cm-edit .cm-selectionBackground {
+    background: rgba(70, 123, 150, .28) !important;
+}
+
+.slowcloud-cm-edit .cm-content::selection,
+.slowcloud-cm-edit .cm-content ::selection {
+    background: rgba(70, 123, 150, .28);
+}
+
+.slowcloud-cm-edit .cm-activeLine {
+    background-color: rgba(70, 123, 150, .04) !important;
+}
+
+.slowcloud-cm-edit .cm-gutters {
+    border-right: 1px solid #F0F0EC;
+    color: #999;
+}
+
+.slowcloud-cm-preview {
+    display: none;
+    overflow: auto;
+    min-height: 420px;
+}
+
+.slowcloud-cm-divider {
+    display: none;
+}
+
+.slowcloud-cm-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    margin: 0;
+    background: #FFF;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-workspace {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) 6px minmax(240px, 1fr);
+    height: calc(100vh - 48px);
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-edit,
+.slowcloud-cm-fullscreen .slowcloud-cm-preview {
+    display: block;
+    min-height: 0;
+    height: 100%;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-edit .cm-editor,
+.slowcloud-cm-fullscreen .slowcloud-cm-edit .cm-scroller {
+    height: 100%;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-divider {
+    display: block;
+    cursor: col-resize;
+    background: #E4E4DF;
+}
+
+html[data-slowcloud-editor-theme="dark"] .slowcloud-cm-preview {
+    background: #20252B;
+}
+
+html[data-slowcloud-editor-theme="dark"] .slowcloud-cm-heading-menu {
+    border-color: #424A55;
+    background: #292F36;
+}

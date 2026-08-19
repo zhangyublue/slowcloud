@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 5187700 */
-  src: url('iconfont.woff2?t=1781163677052') format('woff2'),
-       url('iconfont.woff?t=1781163677052') format('woff'),
-       url('iconfont.ttf?t=1781163677052') format('truetype');
+  src: url('iconfont.woff2?t=1787121309541') format('woff2'),
+       url('iconfont.woff?t=1787121309541') format('woff'),
+       url('iconfont.ttf?t=1787121309541') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,130 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-slowcloudcheckbox:before {
+  content: "\e637";
+}
+
+.icon-slowcloudcheckbox-uncheck:before {
+  content: "\e604";
+}
+
+.icon-slowcloudbiaodanzujian-biaoge:before {
+  content: "\ec15";
+}
+
+.icon-slowcloudshanchubeifen:before {
+  content: "\e6bf";
+}
+
+.icon-slowcloudcheckbox_checked:before {
+  content: "\e63c";
+}
+
+.icon-slowclouddaimakuai:before {
+  content: "\e622";
+}
+
+.icon-slowcloudicon-daimakuai:before {
+  content: "\e653";
+}
+
+.icon-slowcloudh:before {
+  content: "\e8ac";
+}
+
+.icon-slowcloudfujian:before {
+  content: "\e603";
+}
+
+.icon-slowcloudundo:before {
+  content: "\e787";
+}
+
+.icon-slowcloudshangchuantupian:before {
+  content: "\e6e9";
+}
+
+.icon-slowcloudyinyong:before {
+  content: "\e6f4";
+}
+
+.icon-slowcloudfenlan:before {
+  content: "\ec7f";
+}
+
+.icon-slowcloudredo:before {
+  content: "\e749";
+}
+
+.icon-slowcloudshanchuxian:before {
+  content: "\e617";
+}
+
+.icon-slowcloudfengexian:before {
+  content: "\e627";
+}
+
+.icon-slowcloudfenyefengexian:before {
+  content: "\e6a2";
+}
+
+.icon-slowcloudlianjie:before {
+  content: "\e601";
+}
+
+.icon-slowcloud01jiacu:before {
+  content: "\e681";
+}
+
+.icon-slowcloud02xieti:before {
+  content: "\e682";
+}
+
+.icon-slowcloud13biaoti1:before {
+  content: "\e68d";
+}
+
+.icon-slowcloud14biaoti2:before {
+  content: "\e68e";
+}
+
+.icon-slowcloud15biaoti3:before {
+  content: "\e68f";
+}
+
+.icon-slowcloud16biaoti4:before {
+  content: "\e690";
+}
+
+.icon-slowcloud17biaoti5:before {
+  content: "\e691";
+}
+
+.icon-slowcloud18biaoti6:before {
+  content: "\e692";
+}
+
+.icon-slowcloud20xiangmufuhao:before {
+  content: "\e694";
+}
+
+.icon-slowcloud21bianhaogeshi:before {
+  content: "\e695";
+}
+
+.icon-slowcloud23suojin:before {
+  content: "\e698";
+}
+
+.icon-slowcloudshiguangzhou:before {
+  content: "\e60b";
+}
+
+.icon-slowcloudhome:before {
+  content: "\e600";
 }
 
 .icon-slowcloudemoji:before {

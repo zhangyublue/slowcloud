@@ -6,6 +6,35 @@
     word-wrap: break-word;
 }
 
+.slowcloud-task-list__item {
+    list-style: none;
+}
+
+.slowcloud-entry-content .slowcloud-task-list,
+.slowcloud-editor-preview .slowcloud-task-list {
+    margin: 0;
+    padding-left: 0;
+}
+
+.slowcloud-entry-content .slowcloud-task-list > .slowcloud-task-list__item + .slowcloud-task-list__item,
+.slowcloud-editor-preview .slowcloud-task-list > .slowcloud-task-list__item + .slowcloud-task-list__item {
+    margin-top: 0;
+}
+
+.slowcloud-task-list__icon {
+    display: inline-block;
+    width: 1.25em;
+    margin-right: .3em;
+    color: #8f9ba8;
+    font-size: 1.12em;
+    line-height: 1;
+    vertical-align: -.04em;
+}
+
+.slowcloud-task-list__item--checked > .slowcloud-task-list__icon {
+    color: #20a464;
+}
+
 .slowcloud-entry-content > :first-child,
 .slowcloud-editor-preview > :first-child {
     margin-top: 0;

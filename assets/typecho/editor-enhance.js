@@ -701,6 +701,11 @@
     }
 
     function refreshPreview() {
+        if (config.codeMirror && typeof config.codeMirror.refreshPreview === 'function') {
+            config.codeMirror.refreshPreview();
+            return;
+        }
+
         if (activeEditor && typeof activeEditor.refreshPreview === 'function') {
             activeEditor.refreshPreview();
         }
@@ -1160,6 +1165,11 @@
         bindOutsideClose();
         highlightPreviewCode();
         schedulePreviewToc();
+
+        document.addEventListener('slowcloud:preview-refresh', function () {
+            highlightPreviewCode();
+            schedulePreviewToc();
+        });
     }
 
     forceMarkdownEditor();
@@ -1184,6 +1194,8 @@
             window.setTimeout(init, 0);
             return buttons;
         });
+
+        window.setTimeout(init, 0);
     } else if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

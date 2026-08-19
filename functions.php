@@ -635,7 +635,28 @@ function slowcloud_render_admin_editor_enhance($content): void
     $themeMode = (string) ($options->themeMode ?? 'system');
     ?>
 	    (function () {
+	        if (typeof editor !== 'undefined' && editor) {
+	            editor.run = function () {};
+	        }
+
+	        var codeMirrorScript = document.createElement('script');
+	        codeMirrorScript.src = <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/codemirror/editor.bundle.js'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+	        codeMirrorScript.onload = function () {
+	            if (!window.SlowcloudCodeMirror || !document.getElementById('text')) {
+	                return;
+	            }
+
+	            window.SlowcloudEditorEnhance = window.SlowcloudEditorEnhance || {};
+	            window.SlowcloudEditorEnhance.codeMirror = window.SlowcloudCodeMirror.mountSlowcloudEditor({
+	                textarea: document.getElementById('text')
+	            });
+        };
+        document.head.appendChild(codeMirrorScript);
+
+	    })();
+	    (function () {
 		        [
+		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/iconfont/iconfont.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
 		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/css/content-render.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
 		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/css/code-highlight.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>,
 		            <?php echo json_encode(slowcloud_theme_versioned_theme_url('assets/typecho/editor-enhance.css'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
@@ -2859,6 +2880,113 @@ function slowcloud_enhance_content_headings(string $html): array
         'toc' => slowcloud_build_toc_html($items),
     ];
 }
+
+function slowcloud_prepare_custom_markdown(?string $text): string
+{
+    $text = (string) $text;
+    if ($text === '' || strpos($text, '[') === false) {
+        return $text;
+    }
+
+    $fenced = false;
+    $lines = preg_split('/(\r\n|\r|\n)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+    foreach ($lines as $index => $line) {
+        if (preg_match('/^\s*(`{3,}|~{3,})/', $line)) {
+            $fenced = !$fenced;
+            continue;
+        }
+
+        if ($fenced) {
+            continue;
+        }
+
+        $lines[$index] = (string) preg_replace_callback('/^(\s*(?:[-+*]|\d+[.)])\s+)\[([ xX])\]\s*(.*)$/u', static function (array $matches): string {
+            $checked = strtolower($matches[2]) === 'x' ? 'true' : 'false';
+            return $matches[1] . '<slowcloud-task data-slowcloud-syntax="task" checked="' . $checked . '">' . $matches[3] . '</slowcloud-task>';
+        }, $line);
+    }
+
+    return implode('', $lines);
+}
+
+function slowcloud_render_custom_markdown(?string $text): string
+{
+    return \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($text));
+}
+
+function slowcloud_render_custom_tags(string $html): string
+{
+    if ($html === '' || strpos($html, 'slowcloud-task') === false || !class_exists('\DOMDocument')) {
+        return $html;
+    }
+
+    $document = new \DOMDocument('1.0', 'UTF-8');
+    $previous = libxml_use_internal_errors(true);
+    $loaded = $document->loadHTML('<?xml encoding="UTF-8"><div id="slowcloud-content-root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    if (!$loaded) {
+        return $html;
+    }
+
+    $xpath = new \DOMXPath($document);
+    $tasks = $xpath->query('//*[@id="slowcloud-content-root"]//slowcloud-task[@data-slowcloud-syntax="task"]');
+
+    if ($tasks) {
+        foreach ($tasks as $task) {
+            if (!$task instanceof \DOMElement || !$task->parentNode instanceof \DOMElement) {
+                continue;
+            }
+
+            $item = $task->parentNode;
+            $list = $item->parentNode;
+            $checked = $task->getAttribute('checked') === 'true';
+            $icon = $document->createElement('i');
+            $icon->setAttribute('class', 'iconfont slowcloud-task-list__icon ' . ($checked ? 'icon-slowcloudcheckbox' : 'icon-slowcloudcheckbox-uncheck'));
+            $icon->setAttribute('aria-hidden', 'true');
+            if (strtolower($item->tagName) === 'li') {
+                $item->setAttribute('class', trim($item->getAttribute('class') . ' slowcloud-task-list__item slowcloud-task-list__item--' . ($checked ? 'checked' : 'unchecked')));
+            }
+            if ($list instanceof \DOMElement && in_array(strtolower($list->tagName), ['ul', 'ol'], true)) {
+                $parentClass = $list->getAttribute('class');
+                if (!preg_match('/(?:^|\s)slowcloud-task-list(?:\s|$)/', $parentClass)) {
+                    $list->setAttribute('class', trim($parentClass . ' slowcloud-task-list'));
+                }
+            }
+            $item->insertBefore($icon, $task);
+            while ($task->firstChild) {
+                $item->insertBefore($task->firstChild, $task);
+            }
+            $item->removeChild($task);
+        }
+    }
+
+    $root = $document->getElementById('slowcloud-content-root');
+    $body = '';
+    if ($root) {
+        foreach ($root->childNodes as $child) {
+            $body .= $document->saveHTML($child);
+        }
+    }
+
+    return $body !== '' ? $body : $html;
+}
+
+function slowcloud_register_custom_markdown(): void
+{
+    static $registered = false;
+    if ($registered) {
+        return;
+    }
+
+    $registered = true;
+    \Typecho\Plugin::factory('Widget_Abstract_Contents')->markdown = 'slowcloud_render_custom_markdown';
+    \Typecho\Plugin::factory('Widget_Abstract_Contents')->contentEx = 'slowcloud_render_custom_tags';
+}
+
+slowcloud_register_custom_markdown();
 
 function slowcloud_render_content($archive): void
 {
