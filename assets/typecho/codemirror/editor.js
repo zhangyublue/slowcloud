@@ -110,6 +110,7 @@ export function mountSlowcloudEditor(options) {
     const toolbar = root.querySelector('.slowcloud-cm-toolbar');
     const counter = document.createElement('span');
     counter.className = 'slowcloud-cm-count';
+    let previousBodyOverflow = '';
 
     function updateCount(source) {
         counter.textContent = '字数 ' + source.replace(/\s/g, '').length;
@@ -155,33 +156,6 @@ export function mountSlowcloudEditor(options) {
             while (task.firstChild) task.parentNode.insertBefore(task.firstChild, task);
             task.remove();
         });
-    }
-
-    function attachPreviewAnchors() {
-        preview.querySelectorAll('span.line[data-start]').forEach(marker => {
-            const originalLine = Number(marker.dataset.startOriginal);
-            const parserLine = Number(marker.dataset.start);
-            marker.dataset.slowcloudLine = String((Number.isInteger(originalLine) ? originalLine : parserLine) + 1);
-        });
-    }
-
-    function syncPreviewToEditor() {
-        if (!root.classList.contains('slowcloud-cm-fullscreen')) return;
-        const scroller = view.scrollDOM;
-        if (scroller.scrollTop <= 1) {
-            preview.scrollTop = 0;
-            return;
-        }
-        const topLine = view.lineBlockAtHeight(scroller.scrollTop).from;
-        const lineNumber = view.state.doc.lineAt(topLine).number;
-        const anchors = Array.from(preview.querySelectorAll('span.line[data-slowcloud-line]'));
-        let target = anchors[0];
-
-        anchors.forEach(anchor => {
-            if (Number(anchor.dataset.slowcloudLine) <= lineNumber) target = anchor;
-        });
-
-        if (target) preview.scrollTop = Math.max(0, target.offsetTop - 8);
     }
 
     const state = EditorState.create({
@@ -247,8 +221,6 @@ export function mountSlowcloudEditor(options) {
 
         if (window.DOMPurify) html = window.DOMPurify.sanitize(html, {USE_PROFILES: {html: true}});
         preview.innerHTML = html;
-        attachPreviewAnchors();
-        if (root.classList.contains('slowcloud-cm-fullscreen')) requestAnimationFrame(syncPreviewToEditor);
         preview.dispatchEvent(new CustomEvent('slowcloud:preview-refresh', {bubbles: true}));
     }
 
@@ -344,12 +316,15 @@ export function mountSlowcloudEditor(options) {
             button.addEventListener('click', () => {
                 const fullscreen = root.classList.toggle('slowcloud-cm-fullscreen');
                 const label = fullscreen ? '退出分栏' : '分栏全屏';
+                if (fullscreen) {
+                    previousBodyOverflow = document.body.style.overflow;
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = previousBodyOverflow;
+                }
                 button.title = label;
                 button.setAttribute('aria-label', label);
-                requestAnimationFrame(() => {
-                    ensureVisibleLines();
-                    syncPreviewToEditor();
-                });
+                requestAnimationFrame(ensureVisibleLines);
             });
         }
         toolbar.appendChild(button);
@@ -382,7 +357,6 @@ export function mountSlowcloudEditor(options) {
         const stop = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); };
         document.addEventListener('mousemove', move); document.addEventListener('mouseup', stop);
     });
-    view.scrollDOM.addEventListener('scroll', () => requestAnimationFrame(syncPreviewToEditor), {passive: true});
     renderPreview(textarea.value);
     updateCount(textarea.value);
     requestAnimationFrame(ensureVisibleLines);
