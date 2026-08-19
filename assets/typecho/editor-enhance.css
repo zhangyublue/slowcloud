@@ -147,6 +147,11 @@
     padding-left: 1.6em;
 }
 
+#wmd-preview.slowcloud-editor-preview ul.slowcloud-task-list,
+#wmd-preview.slowcloud-editor-preview ol.slowcloud-task-list {
+    padding-left: .3em;
+}
+
 #wmd-preview.slowcloud-editor-preview blockquote {
     margin-right: 0;
     margin-left: 0;
@@ -485,6 +490,60 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
 .slowcloud-cm-edit .cm-content::selection,
 .slowcloud-cm-edit .cm-content ::selection {
     background: rgba(70, 123, 150, .28);
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-heading {
+    color: #117FC8;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-heading-content {
+    color: #117FC8;
+    font-weight: 700;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-link-label {
+    color: #507FB7;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-link-url {
+    text-decoration: underline;
+    text-decoration-color: #507FB7;
+    text-underline-offset: 2px;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-code {
+    color: #6840A5;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-list {
+    color: #3F55B5;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-strong-content {
+    color: #D32D76;
+    font-weight: 700;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-emphasis-content {
+    color: #D32D76;
+    font-style: italic;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-strike-content {
+    text-decoration: line-through;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-inline-code-content {
+    color: #41AA9D;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-quote,
+.slowcloud-cm-edit .slowcloud-cm-mark-task-open {
+    color: #52677D;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-task-done {
+    color: #008F4C;
 }
 
 .slowcloud-cm-edit .cm-activeLine {

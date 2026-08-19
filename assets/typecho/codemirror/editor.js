@@ -1,9 +1,95 @@
 import {EditorState} from '@codemirror/state';
-import {EditorView, keymap, drawSelection, highlightActiveLine, lineNumbers, highlightActiveLineGutter} from '@codemirror/view';
+import {EditorView, keymap, drawSelection, highlightActiveLine, lineNumbers, highlightActiveLineGutter, Decoration, ViewPlugin} from '@codemirror/view';
 import {defaultKeymap, history, historyKeymap, indentWithTab, undo, redo} from '@codemirror/commands';
 import {closeBrackets, closeBracketsKeymap} from '@codemirror/autocomplete';
+import {syntaxTree} from '@codemirror/language';
 import {markdown, markdownLanguage} from '@codemirror/lang-markdown';
+import {GFM} from '@lezer/markdown';
 import {highlightSelectionMatches} from '@codemirror/search';
+
+const markdownMarkerClasses = {
+    'slowcloud-cm-mark-heading': Decoration.mark({class: 'slowcloud-cm-mark-heading'}),
+    'slowcloud-cm-heading-content': Decoration.mark({class: 'slowcloud-cm-heading-content'}),
+    'slowcloud-cm-strong-content': Decoration.mark({class: 'slowcloud-cm-strong-content'}),
+    'slowcloud-cm-emphasis-content': Decoration.mark({class: 'slowcloud-cm-emphasis-content'}),
+    'slowcloud-cm-strike-content': Decoration.mark({class: 'slowcloud-cm-strike-content'}),
+    'slowcloud-cm-inline-code-content': Decoration.mark({class: 'slowcloud-cm-inline-code-content'}),
+    'slowcloud-cm-link-label': Decoration.mark({class: 'slowcloud-cm-link-label'}),
+    'slowcloud-cm-link-url': Decoration.mark({class: 'slowcloud-cm-link-url'}),
+    'slowcloud-cm-mark-code': Decoration.mark({class: 'slowcloud-cm-mark-code'}),
+    'slowcloud-cm-mark-list': Decoration.mark({class: 'slowcloud-cm-mark-list'}),
+    'slowcloud-cm-mark-quote': Decoration.mark({class: 'slowcloud-cm-mark-quote'}),
+    'slowcloud-cm-mark-task-open': Decoration.mark({class: 'slowcloud-cm-mark-task-open'}),
+    'slowcloud-cm-mark-task-done': Decoration.mark({class: 'slowcloud-cm-mark-task-done'})
+};
+
+function markdownMarkerDecoration(name, source) {
+    if (/^(?:ATX|Setext)Heading[1-6]$/.test(name)) {
+        return markdownMarkerClasses['slowcloud-cm-heading-content'];
+    }
+
+    switch (name) {
+        case 'HeaderMark': return markdownMarkerClasses['slowcloud-cm-mark-heading'];
+        case 'CodeMark': return source.length <= 2 ? markdownMarkerClasses['slowcloud-cm-inline-code-content'] : markdownMarkerClasses['slowcloud-cm-mark-code'];
+        case 'ListMark': return markdownMarkerClasses['slowcloud-cm-mark-list'];
+        case 'QuoteMark': return markdownMarkerClasses['slowcloud-cm-mark-quote'];
+        case 'TaskMarker': return source.toLowerCase() === '[x]' ? markdownMarkerClasses['slowcloud-cm-mark-task-done'] : markdownMarkerClasses['slowcloud-cm-mark-task-open'];
+        default: return null;
+    }
+}
+
+const markdownMarkerHighlighter = ViewPlugin.fromClass(class {
+    constructor(view) {
+        this.decorations = this.buildDecorations(view);
+    }
+
+    update(update) {
+        if (update.docChanged || update.viewportChanged) this.decorations = this.buildDecorations(update.view);
+    }
+
+    buildDecorations(view) {
+        const decorations = [];
+        const doc = view.state.doc;
+
+        syntaxTree(view.state).iterate({
+            enter: node => {
+                const source = doc.sliceString(node.from, node.to);
+
+                if (node.name === 'StrongEmphasis') {
+                    decorations.push(markdownMarkerClasses['slowcloud-cm-strong-content'].range(node.from, node.to));
+                    return false;
+                }
+                if (node.name === 'Emphasis') {
+                    decorations.push(markdownMarkerClasses['slowcloud-cm-emphasis-content'].range(node.from, node.to));
+                    return false;
+                }
+                if (node.name === 'Strikethrough') {
+                    decorations.push(markdownMarkerClasses['slowcloud-cm-strike-content'].range(node.from, node.to));
+                    return false;
+                }
+                if (node.name === 'InlineCode') {
+                    decorations.push(markdownMarkerClasses['slowcloud-cm-inline-code-content'].range(node.from, node.to));
+                    return false;
+                }
+                if (node.name === 'Link') {
+                    const labelEnd = source.indexOf(']');
+                    const urlEnd = source.lastIndexOf(')');
+
+                    if (source.startsWith('[') && labelEnd > 0 && source[labelEnd + 1] === '(' && urlEnd > labelEnd + 2) {
+                        decorations.push(markdownMarkerClasses['slowcloud-cm-link-label'].range(node.from + 1, node.from + labelEnd));
+                        decorations.push(markdownMarkerClasses['slowcloud-cm-link-url'].range(node.from + labelEnd + 2, node.from + urlEnd));
+                    }
+                    return;
+                }
+
+                const decoration = markdownMarkerDecoration(node.name, source);
+                if (decoration) decorations.push(decoration.range(node.from, node.to));
+            }
+        });
+
+        return Decoration.set(decorations, true);
+    }
+}, {decorations: plugin => plugin.decorations});
 
 export function mountSlowcloudEditor(options) {
     const textarea = options.textarea;
@@ -76,7 +162,7 @@ export function mountSlowcloudEditor(options) {
         extensions: [
             lineNumbers(), highlightActiveLineGutter(), highlightActiveLine(), drawSelection(),
             history(), closeBrackets(),
-            highlightSelectionMatches(), markdown({base: markdownLanguage}),
+            highlightSelectionMatches(), markdown({base: markdownLanguage, extensions: GFM}), markdownMarkerHighlighter,
             keymap.of([...defaultKeymap, ...historyKeymap, ...closeBracketsKeymap, indentWithTab]),
             EditorView.lineWrapping,
             EditorView.updateListener.of(update => {
@@ -213,7 +299,7 @@ export function mountSlowcloudEditor(options) {
         ['task', '任务列表', 'icon-slowcloudcheckbox_checked', () => insert('- [ ] ', '', '任务项目')],
         ['table', '表格', 'icon-slowcloudbiaodanzujian-biaoge', () => insert('| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |', '', '')],
         ['hr', '分割线', 'icon-slowcloudfengexian', () => insert('---\n', '', '')],
-        ['more', '插入空行', 'icon-slowcloudshanchubeifen', () => insert('<!--more-->\n', '', '')],
+        ['more', '插入空行', 'icon-slowcloudshanchubeifen', () => insert('<br>', '', '')],
         ['undo', '撤销', 'icon-slowcloudundo', () => { undo(view); view.focus(); }],
         ['redo', '重做', 'icon-slowcloudredo', () => { redo(view); view.focus(); }],
         ['fullscreen', '分栏全屏', 'icon-slowcloudfenlan', null]
