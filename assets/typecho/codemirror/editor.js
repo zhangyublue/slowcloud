@@ -4,8 +4,44 @@ import {defaultKeymap, history, historyKeymap, indentWithTab, undo, redo} from '
 import {closeBrackets, closeBracketsKeymap} from '@codemirror/autocomplete';
 import {syntaxTree} from '@codemirror/language';
 import {markdown, markdownLanguage} from '@codemirror/lang-markdown';
+import {LanguageDescription, HighlightStyle, syntaxHighlighting} from '@codemirror/language';
+import {tags} from '@lezer/highlight';
+import {javascript} from '@codemirror/lang-javascript';
+import {python} from '@codemirror/lang-python';
+import {php} from '@codemirror/lang-php';
+import {json} from '@codemirror/lang-json';
+import {css} from '@codemirror/lang-css';
+import {html} from '@codemirror/lang-html';
+import {sql} from '@codemirror/lang-sql';
+import {rust} from '@codemirror/lang-rust';
+import {cpp} from '@codemirror/lang-cpp';
+import {java} from '@codemirror/lang-java';
 import {GFM} from '@lezer/markdown';
 import {highlightSelectionMatches} from '@codemirror/search';
+
+const markdownCodeLanguages = [
+    LanguageDescription.of({name: 'JavaScript', alias: ['js', 'jsx'], extensions: ['js'], support: javascript()}),
+    LanguageDescription.of({name: 'TypeScript', alias: ['ts', 'tsx'], extensions: ['ts'], support: javascript({typescript: true})}),
+    LanguageDescription.of({name: 'Python', alias: ['py'], extensions: ['py'], support: python()}),
+    LanguageDescription.of({name: 'PHP', alias: ['php'], extensions: ['php'], support: php()}),
+    LanguageDescription.of({name: 'JSON', alias: ['json'], extensions: ['json'], support: json()}),
+    LanguageDescription.of({name: 'CSS', alias: ['css'], extensions: ['css'], support: css()}),
+    LanguageDescription.of({name: 'HTML', alias: ['html', 'xml'], extensions: ['html'], support: html()}),
+    LanguageDescription.of({name: 'SQL', alias: ['sql'], extensions: ['sql'], support: sql()}),
+    LanguageDescription.of({name: 'Rust', alias: ['rust', 'rs'], extensions: ['rs'], support: rust()}),
+    LanguageDescription.of({name: 'C++', alias: ['cpp', 'c++'], extensions: ['cpp', 'cc', 'cxx'], support: cpp()}),
+    LanguageDescription.of({name: 'Java', alias: ['java'], extensions: ['java'], support: java()})
+];
+
+const slowcloudCodeHighlighting = syntaxHighlighting(HighlightStyle.define([
+    {tag: [tags.keyword, tags.controlKeyword, tags.operatorKeyword, tags.definitionKeyword], color: '#8A3FFC'},
+    {tag: [tags.string, tags.special(tags.string)], color: '#0B7A75'},
+    {tag: tags.comment, color: '#77838F'},
+    {tag: [tags.number, tags.bool, tags.null], color: '#B65300'},
+    {tag: [tags.function(tags.variableName), tags.labelName], color: '#1769AA'},
+    {tag: [tags.typeName, tags.className], color: '#B83232'},
+    {tag: [tags.propertyName, tags.variableName], color: '#334155'}
+]));
 
 const markdownMarkerClasses = {
     'slowcloud-cm-mark-heading': Decoration.mark({class: 'slowcloud-cm-mark-heading'}),
@@ -24,7 +60,7 @@ const markdownMarkerClasses = {
 };
 
 function markdownMarkerDecoration(name, source) {
-    if (/^(?:ATX|Setext)Heading[1-6]$/.test(name)) {
+    if (/^SetextHeading[1-6]$/.test(name)) {
         return markdownMarkerClasses['slowcloud-cm-heading-content'];
     }
 
@@ -50,6 +86,19 @@ const markdownMarkerHighlighter = ViewPlugin.fromClass(class {
     buildDecorations(view) {
         const decorations = [];
         const doc = view.state.doc;
+
+        let inFence = false;
+        for (let number = 1; number <= doc.lines; number += 1) {
+            const line = doc.line(number);
+            const text = line.text;
+            if (/^\s*(`{3,}|~{3,})/.test(text)) {
+                inFence = !inFence;
+                continue;
+            }
+            if (!inFence && /^\s{0,3}#{1,6}(?=\s|$)/.test(text)) {
+                decorations.push(markdownMarkerClasses['slowcloud-cm-heading-content'].range(line.from, line.to));
+            }
+        }
 
         syntaxTree(view.state).iterate({
             enter: node => {
@@ -163,7 +212,7 @@ export function mountSlowcloudEditor(options) {
         extensions: [
             lineNumbers(), highlightActiveLineGutter(), highlightActiveLine(), drawSelection(),
             history(), closeBrackets(),
-            highlightSelectionMatches(), markdown({base: markdownLanguage, extensions: GFM}), markdownMarkerHighlighter,
+            highlightSelectionMatches(), markdown({base: markdownLanguage, codeLanguages: markdownCodeLanguages, extensions: GFM}), slowcloudCodeHighlighting, markdownMarkerHighlighter,
             keymap.of([...defaultKeymap, ...historyKeymap, ...closeBracketsKeymap, indentWithTab]),
             EditorView.lineWrapping,
             EditorView.updateListener.of(update => {
