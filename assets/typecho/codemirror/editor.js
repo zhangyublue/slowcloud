@@ -305,6 +305,39 @@ export function mountSlowcloudEditor(options) {
         view.focus();
     }
 
+    const toolbarIcons = {
+        heading: '<path d="M4.5 5v14M11.5 5v14M4.5 12h7M15.5 7h4M15.5 12h4M15.5 17h4"/>',
+        heading1: '<path d="M4 6v12M10 6v12M4 12h6M16 8l2-2v12"/>',
+        heading2: '<path d="M4 6v12M10 6v12M4 12h6M15 8.5a2.5 2.5 0 0 1 5 0c0 3.5-5 4.5-5 8h5"/>',
+        heading3: '<path d="M4 6v12M10 6v12M4 12h6M15 7h4l-2.5 5H18a2.5 2.5 0 0 1 0 5h-3"/>',
+        heading4: '<path d="M4 6v12M10 6v12M4 12h6M19 18V6l-4 8h6"/>',
+        heading5: '<path d="M4 6v12M10 6v12M4 12h6M20 6h-5v5h2.5a2.5 2.5 0 0 1 0 5H15"/>',
+        heading6: '<path d="M4 6v12M10 6v12M4 12h6M20 7h-2.5A2.5 2.5 0 0 0 15 9.5v6a2.5 2.5 0 0 0 5 0v-1a2.5 2.5 0 0 0-5 0"/>',
+        bold: '<path d="M7 5h5a3 3 0 0 1 0 6H7zm0 6h6a3.5 3.5 0 0 1 0 7H7z"/>',
+        italic: '<path d="M10 5h8M6 19h8M15 5 9 19"/>',
+        strike: '<path d="M16.5 7.5A6 6 0 0 0 12 5.7c-2.5 0-4.2 1.2-4.2 3 0 1.8 1.6 2.7 4.2 3.4s4.2 1.7 4.2 3.5c0 1.9-1.8 3.2-4.4 3.2a6.8 6.8 0 0 1-4.7-1.8M4 12h16"/>',
+        link: '<path d="M10 13.5a4 4 0 0 0 5.7.1l2-2a4 4 0 0 0-5.7-5.7l-1.1 1.1M14 10.5a4 4 0 0 0-5.7-.1l-2 2a4 4 0 0 0 5.7 5.7l1.1-1.1"/>',
+        image: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><circle cx="9" cy="10" r="1.3"/><path d="m5 17 4.5-4 3 2.5 2.5-2 4 3.5"/>',
+        quote: '<path d="M5 7h4.5L7.2 12H10v6H4v-6zm10 0h4.5L17.2 12H20v6h-6v-6z" fill="currentColor" stroke="none"/>',
+        unorderedList: '<circle cx="5" cy="7" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="5" cy="17" r="1"/><path d="M9 7h10M9 12h10M9 17h10"/>',
+        orderedList: '<path d="M4.5 6.5h1v4M4 10.5h2M4 13.5h1a1.5 1.5 0 0 1 0 3H4l2 2H4M9 7h10M9 12h10M9 17h10"/>',
+        codeBlock: '<path d="m9 8-4 4 4 4M15 8l4 4-4 4M13 6l-2 12"/>',
+        inlineCode: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="m10 9-3 3 3 3M14 9l3 3-3 3"/>',
+        task: '<rect x="5" y="5" width="14" height="14" rx="1.5"/><path d="m8 12 2.4 2.5L16 9"/>',
+        table: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M4 10h16M4 15h16M10 5v14M15 5v14"/>',
+        horizontalRule: '<rect x="6" y="3.5" width="12" height="4" rx=".35"/><path d="M3 12h18"/><rect x="6" y="16.5" width="12" height="4" rx=".35"/>',
+        lineBreak: '<rect x="6" y="3.5" width="13" height="3.5" rx=".35"/><path d="M4 9.5 8 12l-4 2.5z" fill="#1E6FE5" stroke="none"/><rect x="9" y="10.25" width="10" height="3.5" rx=".35"/><rect x="6" y="17" width="13" height="3.5" rx=".35"/>',
+        undo: '<path d="M9 8 5 12l4 4M5 12h8a5 5 0 0 1 5 5"/>',
+        redo: '<path d="m15 8 4 4-4 4M19 12h-8a5 5 0 0 0-5 5"/>',
+        splitPane: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M12 5v14M8.5 9v6M15.5 9v6"/>',
+        attachment: '<path d="m18.5 11.5-7.8 7.8a4 4 0 0 1-5.7-5.7l8.1-8.1a2.75 2.75 0 0 1 3.9 3.9L9 17.4a1.5 1.5 0 0 1-2.1-2.1l7.4-7.4"/>'
+    };
+
+    function toolbarIcon(name) {
+        return '<svg class="slowcloud-cm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+            + toolbarIcons[name] + '</svg>';
+    }
+
     function createHeadingControl() {
         const control = document.createElement('div');
         const trigger = document.createElement('button');
@@ -312,9 +345,9 @@ export function mountSlowcloudEditor(options) {
         control.className = 'slowcloud-cm-heading-control';
         trigger.type = 'button';
         trigger.className = 'btn btn-xs slowcloud-cm-command';
-        trigger.title = '标题级别';
+        trigger.dataset.tooltip = '标题级别';
         trigger.setAttribute('aria-label', '标题级别');
-        trigger.innerHTML = '<i class="iconfont icon-slowcloudh" aria-hidden="true"></i>';
+        trigger.innerHTML = toolbarIcon('heading');
         menu.className = 'slowcloud-cm-heading-menu';
         menu.setAttribute('aria-label', '标题级别');
 
@@ -322,9 +355,9 @@ export function mountSlowcloudEditor(options) {
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'btn btn-xs slowcloud-cm-command';
-            button.title = '标题 ' + level;
+            button.dataset.tooltip = '标题 ' + level;
             button.setAttribute('aria-label', '标题 ' + level);
-            button.innerHTML = '<i class="iconfont icon-slowcloud' + (12 + level) + 'biaoti' + level + '" aria-hidden="true"></i>';
+            button.innerHTML = toolbarIcon('heading' + level);
             button.addEventListener('click', () => applyHeading(level));
             menu.appendChild(button);
         }
@@ -336,30 +369,30 @@ export function mountSlowcloudEditor(options) {
     }
 
     const commands = [
-        ['bold', '加粗', 'icon-slowcloud01jiacu', () => insert('**', '**', '加粗文字')],
-        ['italic', '斜体', 'icon-slowcloud02xieti', () => insert('*', '*', '斜体文字')],
-        ['strike', '删除线', 'icon-slowcloudshanchuxian', () => insert('~~', '~~', '删除文字')],
-        ['link', '链接', 'icon-slowcloudlianjie', () => insert('[', '](https://)', '链接文字')],
-        ['image', '图片', 'icon-slowcloudshangchuantupian', () => insert('![', '](https://)', '图片描述')],
-        ['quote', '引用', 'icon-slowcloudyinyong', () => insert('> ', '', '引用文字')],
-        ['ul', '无序列表', 'icon-slowcloud20xiangmufuhao', () => insert('- ', '', '列表项目')],
-        ['ol', '有序列表', 'icon-slowcloud21bianhaogeshi', () => insert('1. ', '', '列表项目')],
-        ['code', '代码块', 'icon-slowclouddaimakuai', () => insert('```\n', '\n```', '代码')],
-        ['inline-code', '行内代码', 'icon-slowcloudicon-daimakuai', () => insert('`', '`', '代码')],
-        ['task', '任务列表', 'icon-slowcloudcheckbox_checked', () => insert('- [ ] ', '', '任务项目')],
-        ['table', '表格', 'icon-slowcloudbiaodanzujian-biaoge', () => insert('| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |', '', '')],
-        ['hr', '分割线', 'icon-slowcloudfengexian', () => insert('---\n', '', '')],
-        ['more', '插入空行', 'icon-slowcloudshanchubeifen', () => insert('<br>', '', '')],
-        ['undo', '撤销', 'icon-slowcloudundo', () => { undo(view); view.focus(); }],
-        ['redo', '重做', 'icon-slowcloudredo', () => { redo(view); view.focus(); }],
-        ['fullscreen', '分栏全屏', 'icon-slowcloudfenlan', null]
+        ['bold', '加粗', 'bold', () => insert('**', '**', '加粗文字')],
+        ['italic', '斜体', 'italic', () => insert('*', '*', '斜体文字')],
+        ['strike', '删除线', 'strike', () => insert('~~', '~~', '删除文字')],
+        ['link', '链接', 'link', () => insert('[', '](https://)', '链接文字')],
+        ['image', '图片', 'image', () => insert('![', '](https://)', '图片描述')],
+        ['quote', '引用', 'quote', () => insert('> ', '', '引用文字')],
+        ['ul', '无序列表', 'unorderedList', () => insert('- ', '', '列表项目')],
+        ['ol', '有序列表', 'orderedList', () => insert('1. ', '', '列表项目')],
+        ['code', '代码块', 'codeBlock', () => insert('```\n', '\n```', '代码')],
+        ['inline-code', '行内代码', 'inlineCode', () => insert('`', '`', '代码')],
+        ['task', '任务列表', 'task', () => insert('- [ ] ', '', '任务项目')],
+        ['table', '表格', 'table', () => insert('| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |', '', '')],
+        ['hr', '分割线', 'horizontalRule', () => insert('---\n', '', '')],
+        ['more', '插入空行', 'lineBreak', () => insert('<br>', '', '')],
+        ['undo', '撤销', 'undo', () => { undo(view); view.focus(); }],
+        ['redo', '重做', 'redo', () => { redo(view); view.focus(); }],
+        ['fullscreen', '分栏全屏', 'splitPane', null]
     ];
     toolbar.appendChild(createHeadingControl());
     commands.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'btn btn-xs slowcloud-cm-command';
-        button.dataset.command = item[0]; button.title = item[1]; button.setAttribute('aria-label', item[1]);
-        button.innerHTML = '<i class="iconfont ' + item[2] + '" aria-hidden="true"></i>';
+        button.dataset.command = item[0]; button.dataset.tooltip = item[1]; button.setAttribute('aria-label', item[1]);
+        button.innerHTML = toolbarIcon(item[2]);
         if (item[3]) button.addEventListener('click', item[3]);
         if (item[0] === 'fullscreen') {
             button.addEventListener('click', () => {
@@ -371,7 +404,7 @@ export function mountSlowcloudEditor(options) {
                 } else {
                     document.body.style.overflow = previousBodyOverflow;
                 }
-                button.title = label;
+                button.dataset.tooltip = label;
                 button.setAttribute('aria-label', label);
                 requestAnimationFrame(ensureVisibleLines);
             });
@@ -380,8 +413,8 @@ export function mountSlowcloudEditor(options) {
     });
     const upload = document.createElement('button');
     upload.type = 'button'; upload.className = 'btn btn-xs slowcloud-cm-command';
-    upload.title = '附件'; upload.setAttribute('aria-label', '附件');
-    upload.innerHTML = '<i class="iconfont icon-slowcloudfujian" aria-hidden="true"></i>';
+    upload.dataset.tooltip = '附件'; upload.setAttribute('aria-label', '附件');
+    upload.innerHTML = toolbarIcon('attachment');
     upload.addEventListener('click', () => {
         const tab = document.querySelector('#tab-files-btn');
         if (tab) tab.click();

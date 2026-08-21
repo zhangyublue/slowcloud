@@ -385,13 +385,13 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
 .slowcloud-cm-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    padding: 6px;
+    gap: 2px;
     border-bottom: 1px solid #F0F0EC;
     background: #FAFAF8;
 }
 
 .slowcloud-cm-toolbar .slowcloud-cm-command {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -402,10 +402,45 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
     color: #65707C;
 }
 
-.slowcloud-cm-toolbar .slowcloud-cm-command .iconfont {
-    color: currentColor;
-    font-size: 16px;
-    line-height: 1;
+.slowcloud-cm-toolbar .slowcloud-cm-command[data-tooltip]::after {
+    position: absolute;
+    z-index: 1004;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    display: block;
+    width: max-content;
+    max-width: 160px;
+    padding: 4px 6px;
+    border-radius: 2px;
+    background: #303741;
+    color: #FFF;
+    content: attr(data-tooltip);
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.25;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%);
+    visibility: hidden;
+    white-space: nowrap;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command[data-tooltip]:hover::after,
+.slowcloud-cm-toolbar .slowcloud-cm-command[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.slowcloud-cm-icon {
+    display: block;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .slowcloud-cm-toolbar .slowcloud-cm-command:hover,
@@ -432,8 +467,15 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
     box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
 }
 
-.slowcloud-cm-heading-menu .slowcloud-cm-command .iconfont {
-    font-size: 20px;
+.slowcloud-cm-heading-menu .slowcloud-cm-icon {
+    flex-basis: 22px;
+    width: 22px;
+    height: 22px;
+}
+
+.slowcloud-cm-heading-menu .slowcloud-cm-command[data-tooltip]::after {
+    top: calc(100% + 5px);
+    bottom: auto;
 }
 
 .slowcloud-cm-heading-control:hover .slowcloud-cm-heading-menu,
