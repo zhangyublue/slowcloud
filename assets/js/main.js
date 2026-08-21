@@ -481,4 +481,98 @@
             }, 0);
         });
     }
+    function timelineContentNaturalWidth(content) {
+        const previous = {
+            position: content.style.position,
+            visibility: content.style.visibility,
+            display: content.style.display,
+            width: content.style.width,
+            maxWidth: content.style.maxWidth
+        };
+        Object.assign(content.style, {
+            position: 'absolute',
+            visibility: 'hidden',
+            display: 'block',
+            width: 'max-content',
+            maxWidth: 'none'
+        });
+        const width = Math.ceil(content.getBoundingClientRect().width);
+        Object.assign(content.style, previous);
+        return width;
+    }
+
+    function alignTimelines(root) {
+        const scope = root || document;
+        const mobile = window.matchMedia('(max-width: 640px)').matches;
+        scope.querySelectorAll('.slowcloud-timeline--right, .slowcloud-timeline--medium').forEach((timeline) => {
+            const items = [...timeline.querySelectorAll('.slowcloud-timeline__item')];
+            items.forEach((item) => item.style.removeProperty('--slowcloud-timeline-left-width'));
+
+            if (mobile) {
+                timeline.querySelectorAll('.slowcloud-timeline__content--constrained').forEach((content) => {
+                    content.classList.remove('slowcloud-timeline__content--constrained');
+                });
+                return;
+            }
+            if (timeline.clientWidth <= 0) return;
+
+            const isMedium = timeline.classList.contains('slowcloud-timeline--medium');
+            const contents = timeline.querySelectorAll(isMedium
+                ? '.slowcloud-timeline__content--left'
+                : '.slowcloud-timeline__content');
+            let naturalWidth = 0;
+            contents.forEach((content) => {
+                content.classList.remove('slowcloud-timeline__content--constrained');
+                naturalWidth = Math.max(naturalWidth, timelineContentNaturalWidth(content));
+            });
+
+            const gaps = isMedium ? 36 : 18;
+            const reserved = isMedium ? 14 + 60 : 14;
+            const leftWidth = Math.min(naturalWidth, Math.max(0, timeline.clientWidth - gaps - reserved));
+            items.forEach((item) => item.style.setProperty('--slowcloud-timeline-left-width', `${leftWidth}px`));
+            contents.forEach((content) => content.classList.toggle(
+                'slowcloud-timeline__content--constrained',
+                content.scrollWidth > content.clientWidth + 1
+            ));
+            if (isMedium) {
+                timeline.querySelectorAll('.slowcloud-timeline__content--right').forEach((content) => content.classList.toggle(
+                    'slowcloud-timeline__content--constrained',
+                    content.scrollWidth > content.clientWidth + 1
+                ));
+            }
+        });
+
+        scope.querySelectorAll('.slowcloud-timeline__item').forEach((item) => {
+            const left = item.querySelector('.slowcloud-timeline__content--left');
+            const right = item.querySelector('.slowcloud-timeline__content--right');
+            if (!item.closest('.slowcloud-timeline--medium')) return;
+            const itemBox = item.getBoundingClientRect();
+            const leftTarget = left && left.firstElementChild;
+            const rightTarget = right && right.firstElementChild;
+            const leftBox = leftTarget && leftTarget.getBoundingClientRect();
+            const rightBox = rightTarget && rightTarget.getBoundingClientRect();
+            const target = !leftBox || !rightBox || leftBox.height <= rightBox.height ? leftBox || rightBox : rightBox;
+            if (!target) return;
+            item.style.setProperty('--slowcloud-timeline-dot-offset', `${Math.round(target.top - itemBox.top + target.height / 2)}px`);
+        });
+    }
+
+    function bindMediumTimelineAlignment() {
+        const refresh = () => alignTimelines(document);
+        refresh();
+        window.requestAnimationFrame(() => window.requestAnimationFrame(refresh));
+        window.addEventListener('load', refresh);
+        window.addEventListener('resize', refresh);
+
+        if (typeof ResizeObserver === 'function') {
+            const observer = new ResizeObserver(refresh);
+            document.querySelectorAll('.slowcloud-timeline__content').forEach((content) => observer.observe(content));
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindMediumTimelineAlignment);
+    } else {
+        bindMediumTimelineAlignment();
+    }
 })();

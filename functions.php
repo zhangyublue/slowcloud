@@ -2910,14 +2910,101 @@ function slowcloud_prepare_custom_markdown(?string $text): string
     return implode('', $lines);
 }
 
+function slowcloud_timeline_attributes(string $source): ?array
+{
+    $attributes = [];
+    $offset = 0;
+
+    while ($offset < strlen($source)) {
+        if (!preg_match('/\G\s+([a-z-]+)="([^"]*)"/A', $source, $matches, 0, $offset)) {
+            return null;
+        }
+        $attributes[$matches[1]] = $matches[2];
+        $offset += strlen($matches[0]);
+    }
+
+    return $attributes;
+}
+
+function slowcloud_compile_timeline_markdown(string $text): array
+{
+    $timelines = [];
+    $pattern = '/^\[timeline((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline\][ \t]*$/ms';
+    $source = preg_replace_callback($pattern, static function (array $matches) use (&$timelines): string {
+        $timelineAttributes = slowcloud_timeline_attributes($matches[1]);
+        $mode = $timelineAttributes['mode'] ?? 'left';
+        if ($timelineAttributes === null || !in_array($mode, ['left', 'right', 'medium'], true)) {
+            return $matches[0];
+        }
+
+        $itemPattern = '/^\[timeline-item((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline-item\][ \t]*(?:\r?\n|$)/ms';
+        preg_match_all($itemPattern, $matches[2], $itemMatches, PREG_SET_ORDER);
+        if (!$itemMatches || trim((string) preg_replace($itemPattern, '', $matches[2])) !== '') {
+            return $matches[0];
+        }
+
+        $items = [];
+        foreach ($itemMatches as $itemMatch) {
+            $itemAttributes = slowcloud_timeline_attributes($itemMatch[1]);
+            $color = $itemAttributes['color'] ?? 'blue';
+            $solid = $itemAttributes['solid'] ?? 'false';
+            $gap = $itemAttributes['gap'] ?? '25';
+            $line = $itemAttributes['line'] ?? 'solid';
+            if ($itemAttributes === null
+                || !in_array($color, ['blue', 'green', 'red', 'gray'], true)
+                || !in_array($solid, ['true', 'false'], true)
+                || !preg_match('/^\d+(?:\.\d+)?$/', $gap)
+                || !in_array($line, ['solid', 'dash'], true)) {
+                return $matches[0];
+            }
+            $itemTag = '<slowcloud-timeline-item color="' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8')
+                . '" solid="' . $solid . '" gap="' . $gap . '" line="' . $line . '">';
+
+            if ($mode !== 'medium') {
+                $items[] = $itemTag . \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($itemMatch[2])) . '</slowcloud-timeline-item>';
+                continue;
+            }
+
+            $sidePattern = '/^\[timeline-item-(left|right)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline-item-\1\][ \t]*(?:\r?\n|$)/ms';
+            preg_match_all($sidePattern, $itemMatch[2], $sideMatches, PREG_SET_ORDER);
+            if (!$sideMatches || trim((string) preg_replace($sidePattern, '', $itemMatch[2])) !== '') {
+                return $matches[0];
+            }
+
+            $sides = [];
+            foreach ($sideMatches as $sideMatch) {
+                if (isset($sides[$sideMatch[1]])) {
+                    return $matches[0];
+                }
+                $sides[$sideMatch[1]] = \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($sideMatch[2]));
+            }
+            $items[] = $itemTag
+                . (isset($sides['left']) ? '<slowcloud-timeline-item-left>' . $sides['left'] . '</slowcloud-timeline-item-left>' : '')
+                . (isset($sides['right']) ? '<slowcloud-timeline-item-right>' . $sides['right'] . '</slowcloud-timeline-item-right>' : '')
+                . '</slowcloud-timeline-item>';
+        }
+
+        $id = count($timelines);
+        $timelines[$id] = '<slowcloud-timeline data-slowcloud-syntax="timeline" mode="' . $mode . '">' . implode('', $items) . '</slowcloud-timeline>';
+        return '<!--slowcloud-timeline:' . $id . '-->';
+    }, $text);
+
+    return [$source ?? $text, $timelines];
+}
+
 function slowcloud_render_custom_markdown(?string $text): string
 {
-    return \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($text));
+    [$source, $timelines] = slowcloud_compile_timeline_markdown((string) $text);
+    $html = \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($source));
+    foreach ($timelines as $id => $timeline) {
+        $html = str_replace('<!--slowcloud-timeline:' . $id . '-->', $timeline, $html);
+    }
+    return $html;
 }
 
 function slowcloud_render_custom_tags(string $html): string
 {
-    if ($html === '' || strpos($html, 'slowcloud-task') === false || !class_exists('\DOMDocument')) {
+    if ($html === '' || (strpos($html, 'slowcloud-task') === false && strpos($html, 'slowcloud-timeline') === false) || !class_exists('\DOMDocument')) {
         return $html;
     }
 
@@ -2960,6 +3047,75 @@ function slowcloud_render_custom_tags(string $html): string
                 $item->insertBefore($task->firstChild, $task);
             }
             $item->removeChild($task);
+        }
+    }
+
+    $timelines = $xpath->query('//*[@id="slowcloud-content-root"]//slowcloud-timeline[@data-slowcloud-syntax="timeline"]');
+    if ($timelines) {
+        foreach ($timelines as $timeline) {
+            if (!$timeline instanceof \DOMElement || !$timeline->parentNode) {
+                continue;
+            }
+            $mode = $timeline->getAttribute('mode');
+            $mode = in_array($mode, ['left', 'right', 'medium'], true) ? $mode : 'left';
+            $component = $document->createElement('section');
+            $component->setAttribute('class', 'slowcloud-timeline slowcloud-timeline--' . $mode);
+            $items = [];
+            foreach ($timeline->childNodes as $child) {
+                if ($child instanceof \DOMElement && strtolower($child->tagName) === 'slowcloud-timeline-item') {
+                    $items[] = $child;
+                }
+            }
+            $previousLine = 'solid';
+            foreach ($items as $item) {
+                $color = $item->getAttribute('color');
+                $color = in_array($color, ['blue', 'green', 'red', 'gray'], true) ? $color : 'blue';
+                $solid = $item->getAttribute('solid') === 'true';
+                $gap = $item->getAttribute('gap');
+                $gap = preg_match('/^\d+(?:\.\d+)?$/', $gap) ? $gap : '25';
+                $line = $item->getAttribute('line') === 'dash' ? 'dash' : 'solid';
+                $entry = $document->createElement('article');
+                $entry->setAttribute('class', 'slowcloud-timeline__item slowcloud-timeline__item--' . $color . ($solid ? ' slowcloud-timeline__item--solid' : ''));
+                $entry->setAttribute('style', '--slowcloud-timeline-gap:' . $gap . 'px;--slowcloud-timeline-line-style:' . ($line === 'dash' ? 'dashed' : 'solid') . ';--slowcloud-timeline-incoming-line-style:' . ($previousLine === 'dash' ? 'dashed' : 'solid') . ';');
+                $rail = $document->createElement('div');
+                $rail->setAttribute('class', 'slowcloud-timeline__rail');
+                $dot = $document->createElement('span');
+                $dot->setAttribute('class', 'slowcloud-timeline__dot');
+                $rail->appendChild($dot);
+                $left = $document->createElement('div');
+                $left->setAttribute('class', 'slowcloud-timeline__content slowcloud-timeline__content--left');
+                $right = $document->createElement('div');
+                $right->setAttribute('class', 'slowcloud-timeline__content slowcloud-timeline__content--right');
+
+                if ($mode === 'medium') {
+                    foreach (iterator_to_array($item->childNodes) as $child) {
+                        if (!$child instanceof \DOMElement) {
+                            continue;
+                        }
+                        $target = strtolower($child->tagName) === 'slowcloud-timeline-item-left' ? $left : $right;
+                        while ($child->firstChild) {
+                            $target->appendChild($child->firstChild);
+                        }
+                    }
+                    $entry->appendChild($left);
+                    $entry->appendChild($rail);
+                    $entry->appendChild($right);
+                } else {
+                    while ($item->firstChild) {
+                        $right->appendChild($item->firstChild);
+                    }
+                    if ($mode === 'right') {
+                        $entry->appendChild($right);
+                        $entry->appendChild($rail);
+                    } else {
+                        $entry->appendChild($rail);
+                        $entry->appendChild($right);
+                    }
+                }
+                $component->appendChild($entry);
+                $previousLine = $line;
+            }
+            $timeline->parentNode->replaceChild($component, $timeline);
         }
     }
 
