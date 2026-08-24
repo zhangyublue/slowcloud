@@ -368,7 +368,7 @@
 }
 
 .slowcloud-timeline--right .slowcloud-timeline__item {
-    grid-template-columns: var(--slowcloud-timeline-left-width, max-content) 14px;
+    grid-template-columns: minmax(0, 1fr) 14px;
 }
 
 .slowcloud-timeline--right .slowcloud-timeline__rail { grid-column: 2; }
@@ -378,7 +378,7 @@
 }
 
 .slowcloud-timeline--medium .slowcloud-timeline__item {
-    grid-template-columns: var(--slowcloud-timeline-left-width, max-content) 14px minmax(60px, 1fr);
+    grid-template-columns: minmax(60px, 1fr) 14px minmax(60px, 1fr);
 }
 
 .slowcloud-timeline--medium .slowcloud-timeline__content--left {

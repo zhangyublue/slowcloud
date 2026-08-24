@@ -1065,7 +1065,7 @@ img {
     color: var(--slowcloud-text);
 }
 
-.slowcloud-timeline {
+.slowcloud-archive-timeline {
     display: grid;
     gap: 28px;
 }

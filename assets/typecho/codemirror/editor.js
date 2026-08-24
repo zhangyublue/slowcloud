@@ -185,11 +185,15 @@ export function mountSlowcloudEditor(options) {
         return attributes;
     }
 
+    function timelineColorIsValid(color) {
+        return /^(?:#[0-9a-f]{3,4}|#[0-9a-f]{6}(?:[0-9a-f]{2})?|(?:rgb|hsl)a?\(\s*[0-9.%]+(?:\s*[,/]\s*[0-9.%]+){2,3}\s*\)|[a-z]+)$/i.test(color);
+    }
+
     function compileTimelines(source, convertMarkdown) {
         const timelines = [];
-        const timelinePattern = /^\[timeline((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline\][ \t]*$/gms;
-        const itemPattern = /^\[timeline-item((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline-item\][ \t]*(?:\r?\n|$)/gms;
-        const sidePattern = /^\[timeline-item-(left|right)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline-item-\1\][ \t]*(?:\r?\n|$)/gms;
+        const timelinePattern = /^[ \t]*\[timeline((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline\][ \t]*$/gms;
+        const itemPattern = /^[ \t]*\[timeline-item((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline-item\][ \t]*(?:\r?\n|$)/gms;
+        const sidePattern = /^[ \t]*\[timeline-item-(left|right)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline-item-\1\][ \t]*(?:\r?\n|$)/gms;
 
         const compiled = source.replace(timelinePattern, (block, timelineSource, body) => {
             const timeline = timelineAttributes(timelineSource);
@@ -207,7 +211,7 @@ export function mountSlowcloudEditor(options) {
                 const gap = item && (item.gap || '25');
                 const line = item && (item.line || 'solid');
                 if (!item
-                    || !['blue', 'green', 'red', 'gray'].includes(color)
+                    || !timelineColorIsValid(color)
                     || !['true', 'false'].includes(solid)
                     || !/^\d+(?:\.\d+)?$/.test(gap)
                     || !['solid', 'dash'].includes(line)) return block;
@@ -284,7 +288,8 @@ export function mountSlowcloudEditor(options) {
             let previousLine = 'solid';
 
             [...timeline.children].filter(child => child.tagName === 'SLOWCLOUD-TIMELINE-ITEM').forEach(item => {
-                const color = ['blue', 'green', 'red', 'gray'].includes(item.getAttribute('color')) ? item.getAttribute('color') : 'blue';
+                const colorValue = item.getAttribute('color') || 'blue';
+                const color = timelineColorIsValid(colorValue) ? colorValue : 'blue';
                 const solid = item.getAttribute('solid') === 'true';
                 const gap = /^\d+(?:\.\d+)?$/.test(item.getAttribute('gap')) ? item.getAttribute('gap') : '25';
                 const line = item.getAttribute('line') === 'dash' ? 'dash' : 'solid';
@@ -293,7 +298,8 @@ export function mountSlowcloudEditor(options) {
                 const dot = document.createElement('span');
                 const left = document.createElement('div');
                 const right = document.createElement('div');
-                entry.className = 'slowcloud-timeline__item slowcloud-timeline__item--' + color + (solid ? ' slowcloud-timeline__item--solid' : '');
+                entry.className = 'slowcloud-timeline__item' + (['blue', 'green', 'red', 'gray'].includes(color) ? ' slowcloud-timeline__item--' + color : '') + (solid ? ' slowcloud-timeline__item--solid' : '');
+                entry.style.setProperty('--slowcloud-timeline-color', color);
                 entry.style.setProperty('--slowcloud-timeline-gap', gap + 'px');
                 entry.style.setProperty('--slowcloud-timeline-line-style', line === 'dash' ? 'dashed' : 'solid');
                 entry.style.setProperty('--slowcloud-timeline-incoming-line-style', previousLine === 'dash' ? 'dashed' : 'solid');
@@ -526,12 +532,35 @@ export function mountSlowcloudEditor(options) {
         undo: '<path d="M9 8 5 12l4 4M5 12h8a5 5 0 0 1 5 5"/>',
         redo: '<path d="m15 8 4 4-4 4M19 12h-8a5 5 0 0 0-5 5"/>',
         splitPane: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M12 5v14M8.5 9v6M15.5 9v6"/>',
+        timeline: '<path d="M7 3v18M12 6h9M12 12h11M12 18h8"/><circle cx="7" cy="8" r="2.4"/><circle cx="7" cy="16" r="2.4"/>',
         attachment: '<path d="m18.5 11.5-7.8 7.8a4 4 0 0 1-5.7-5.7l8.1-8.1a2.75 2.75 0 0 1 3.9 3.9L9 17.4a1.5 1.5 0 0 1-2.1-2.1l7.4-7.4"/>'
     };
 
     function toolbarIcon(name) {
         return '<svg class="slowcloud-cm-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
             + toolbarIcons[name] + '</svg>';
+    }
+
+    function createTimelineDialog() {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'slowcloud-cm-timeline-dialog';
+        dialog.innerHTML = '<form method="dialog"><strong>插入时光轴</strong>'
+            + '<button type="submit" value="left">左侧模式</button>'
+            + '<button type="submit" value="right">右侧模式</button>'
+            + '<button type="submit" value="medium">中间模式</button>'
+            + '<button type="submit" value="cancel">取消</button></form>';
+        dialog.addEventListener('close', () => {
+            const mode = dialog.returnValue;
+            if (!['left', 'right', 'medium'].includes(mode)) { view.focus(); return; }
+            const templates = {
+                left: '[timeline mode="left"]\n[timeline-item color="blue"]\nMarkdown 内容 1\n[/timeline-item]\n[timeline-item color="green"]\nMarkdown 内容 2\n[/timeline-item]\n[timeline-item color="red"]\nMarkdown 内容 3\n[/timeline-item]\n[/timeline]',
+                right: '[timeline mode="right"]\n[timeline-item color="blue"]\nMarkdown 内容 1\n[/timeline-item]\n[timeline-item color="green"]\nMarkdown 内容 2\n[/timeline-item]\n[timeline-item color="red"]\nMarkdown 内容 3\n[/timeline-item]\n[/timeline]',
+                medium: '[timeline mode="medium"]\n[timeline-item color="blue"]\n[timeline-item-left]\n左侧 Markdown 内容 1\n[/timeline-item-left]\n[timeline-item-right]\n右侧 Markdown 内容 1\n[/timeline-item-right]\n[/timeline-item]\n[timeline-item color="green"]\n[timeline-item-left]\n左侧 Markdown 内容 2\n[/timeline-item-left]\n[timeline-item-right]\n右侧 Markdown 内容 2\n[/timeline-item-right]\n[/timeline-item]\n[timeline-item color="red"]\n[timeline-item-left]\n左侧 Markdown 内容 3\n[/timeline-item-left]\n[timeline-item-right]\n右侧 Markdown 内容 3\n[/timeline-item-right]\n[/timeline-item]\n[/timeline]'
+            };
+            insert('', '', templates[mode]);
+        });
+        root.appendChild(dialog);
+        return dialog;
     }
 
     function createHeadingControl() {
@@ -564,6 +593,7 @@ export function mountSlowcloudEditor(options) {
         return control;
     }
 
+    const timelineDialog = createTimelineDialog();
     const commands = [
         ['bold', '加粗', 'bold', () => insert('**', '**', '加粗文字')],
         ['italic', '斜体', 'italic', () => insert('*', '*', '斜体文字')],
@@ -579,6 +609,7 @@ export function mountSlowcloudEditor(options) {
         ['table', '表格', 'table', () => insert('| 表头 | 表头 |\n| --- | --- |\n| 内容 | 内容 |', '', '')],
         ['hr', '分割线', 'horizontalRule', () => insert('---\n', '', '')],
         ['more', '插入空行', 'lineBreak', () => insert('<br>', '', '')],
+        ['timeline', '插入时光轴', 'timeline', () => timelineDialog.showModal()],
         ['undo', '撤销', 'undo', () => { undo(view); view.focus(); }],
         ['redo', '重做', 'redo', () => { redo(view); view.focus(); }],
         ['fullscreen', '分栏全屏', 'splitPane', null]

@@ -2926,10 +2926,22 @@ function slowcloud_timeline_attributes(string $source): ?array
     return $attributes;
 }
 
+function slowcloud_timeline_color_is_valid(string $color): bool
+{
+    return preg_match('/^(?:#[0-9a-f]{3,4}|#[0-9a-f]{6}(?:[0-9a-f]{2})?|(?:rgb|hsl)a?\(\s*[0-9.%]+(?:\s*[,\/]\s*[0-9.%]+){2,3}\s*\)|[a-z]+)$/i', $color) === 1;
+}
+
 function slowcloud_compile_timeline_markdown(string $text): array
 {
+    $text = (string) preg_replace_callback(
+        '/\[(?:\/?timeline(?:-item(?:-(?:left|right))?)?)[^\]]*\]/i',
+        static function (array $matches): string {
+            return html_entity_decode($matches[0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        },
+        $text
+    );
     $timelines = [];
-    $pattern = '/^\[timeline((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline\][ \t]*$/ms';
+    $pattern = '/^[ \t]*\[timeline((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline\][ \t]*$/ms';
     $source = preg_replace_callback($pattern, static function (array $matches) use (&$timelines): string {
         $timelineAttributes = slowcloud_timeline_attributes($matches[1]);
         $mode = $timelineAttributes['mode'] ?? 'left';
@@ -2937,7 +2949,7 @@ function slowcloud_compile_timeline_markdown(string $text): array
             return $matches[0];
         }
 
-        $itemPattern = '/^\[timeline-item((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline-item\][ \t]*(?:\r?\n|$)/ms';
+        $itemPattern = '/^[ \t]*\[timeline-item((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline-item\][ \t]*(?:\r?\n|$)/ms';
         preg_match_all($itemPattern, $matches[2], $itemMatches, PREG_SET_ORDER);
         if (!$itemMatches || trim((string) preg_replace($itemPattern, '', $matches[2])) !== '') {
             return $matches[0];
@@ -2951,7 +2963,7 @@ function slowcloud_compile_timeline_markdown(string $text): array
             $gap = $itemAttributes['gap'] ?? '25';
             $line = $itemAttributes['line'] ?? 'solid';
             if ($itemAttributes === null
-                || !in_array($color, ['blue', 'green', 'red', 'gray'], true)
+                || !slowcloud_timeline_color_is_valid($color)
                 || !in_array($solid, ['true', 'false'], true)
                 || !preg_match('/^\d+(?:\.\d+)?$/', $gap)
                 || !in_array($line, ['solid', 'dash'], true)) {
@@ -2965,7 +2977,7 @@ function slowcloud_compile_timeline_markdown(string $text): array
                 continue;
             }
 
-            $sidePattern = '/^\[timeline-item-(left|right)\][ \t]*(?:\r?\n)(.*?)^\[\/timeline-item-\1\][ \t]*(?:\r?\n|$)/ms';
+            $sidePattern = '/^[ \t]*\[timeline-item-(left|right)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline-item-\1\][ \t]*(?:\r?\n|$)/ms';
             preg_match_all($sidePattern, $itemMatch[2], $sideMatches, PREG_SET_ORDER);
             if (!$sideMatches || trim((string) preg_replace($sidePattern, '', $itemMatch[2])) !== '') {
                 return $matches[0];
@@ -3000,6 +3012,18 @@ function slowcloud_render_custom_markdown(?string $text): string
         $html = str_replace('<!--slowcloud-timeline:' . $id . '-->', $timeline, $html);
     }
     return $html;
+}
+
+function slowcloud_render_timeline_document(string $source): string
+{
+    $source = html_entity_decode($source, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $source = str_replace(["\r\n", "\r", '<br>', '<br/>', '<br />'], ["\n", "\n", "\n", "\n", "\n"], $source);
+    [$markdownSource, $timelines] = slowcloud_compile_timeline_markdown($source);
+    $html = \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($markdownSource));
+    foreach ($timelines as $id => $timeline) {
+        $html = str_replace('<!--slowcloud-timeline:' . $id . '-->', $timeline, $html);
+    }
+    return slowcloud_render_custom_tags($html);
 }
 
 function slowcloud_render_custom_tags(string $html): string
@@ -3069,14 +3093,15 @@ function slowcloud_render_custom_tags(string $html): string
             $previousLine = 'solid';
             foreach ($items as $item) {
                 $color = $item->getAttribute('color');
-                $color = in_array($color, ['blue', 'green', 'red', 'gray'], true) ? $color : 'blue';
+                $color = slowcloud_timeline_color_is_valid($color) ? $color : 'blue';
                 $solid = $item->getAttribute('solid') === 'true';
                 $gap = $item->getAttribute('gap');
                 $gap = preg_match('/^\d+(?:\.\d+)?$/', $gap) ? $gap : '25';
                 $line = $item->getAttribute('line') === 'dash' ? 'dash' : 'solid';
                 $entry = $document->createElement('article');
-                $entry->setAttribute('class', 'slowcloud-timeline__item slowcloud-timeline__item--' . $color . ($solid ? ' slowcloud-timeline__item--solid' : ''));
-                $entry->setAttribute('style', '--slowcloud-timeline-gap:' . $gap . 'px;--slowcloud-timeline-line-style:' . ($line === 'dash' ? 'dashed' : 'solid') . ';--slowcloud-timeline-incoming-line-style:' . ($previousLine === 'dash' ? 'dashed' : 'solid') . ';');
+                $colorClass = in_array($color, ['blue', 'green', 'red', 'gray'], true) ? ' slowcloud-timeline__item--' . $color : '';
+                $entry->setAttribute('class', 'slowcloud-timeline__item' . $colorClass . ($solid ? ' slowcloud-timeline__item--solid' : ''));
+                $entry->setAttribute('style', '--slowcloud-timeline-color:' . $color . ';--slowcloud-timeline-gap:' . $gap . 'px;--slowcloud-timeline-line-style:' . ($line === 'dash' ? 'dashed' : 'solid') . ';--slowcloud-timeline-incoming-line-style:' . ($previousLine === 'dash' ? 'dashed' : 'solid') . ';');
                 $rail = $document->createElement('div');
                 $rail->setAttribute('class', 'slowcloud-timeline__rail');
                 $dot = $document->createElement('span');
@@ -3144,11 +3169,10 @@ function slowcloud_register_custom_markdown(): void
 
 slowcloud_register_custom_markdown();
 
-function slowcloud_render_content($archive): void
+function slowcloud_render_article_content($archive): void
 {
-    ob_start();
-    $archive->content();
-    $html = slowcloud_rewrite_upload_html($archive, (string) ob_get_clean());
+    $html = slowcloud_render_timeline_document((string) $archive->text);
+    $html = slowcloud_rewrite_upload_html($archive, $html);
     $html = slowcloud_replace_owo_shortcodes($archive, $html);
     $html = slowcloud_embed_bilibili_videos($html);
     $enhanced = slowcloud_enhance_content_headings($html);

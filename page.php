@@ -19,7 +19,7 @@
             <?php postMeta($this, 'page'); ?>
 
             <div class="slowcloud-entry-content" itemprop="articleBody">
-                <?php slowcloud_render_content($this); ?>
+                <?php slowcloud_render_article_content($this); ?>
             </div>
         </article>
 

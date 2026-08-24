@@ -473,6 +473,33 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
     height: 22px;
 }
 
+.slowcloud-cm-timeline-dialog {
+    width: min(360px, calc(100vw - 32px));
+    padding: 18px;
+    border: 1px solid #D9D9D6;
+    border-radius: 4px;
+    background: #FFF;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+    color: #243449;
+}
+.slowcloud-cm-timeline-dialog::backdrop { background: rgba(25, 35, 48, .28); }
+.slowcloud-cm-timeline-dialog form { display: grid; gap: 10px; margin: 0; }
+.slowcloud-cm-timeline-dialog strong { margin-bottom: 4px; }
+.slowcloud-cm-timeline-dialog button {
+    min-height: 38px;
+    border: 1px solid #D9D9D6;
+    border-radius: 3px;
+    background: #FAFAF8;
+    color: #334155;
+    cursor: pointer;
+}
+.slowcloud-cm-timeline-dialog button:hover,
+.slowcloud-cm-timeline-dialog button:focus-visible {
+    border-color: #467B96;
+    background: #F0F7FA;
+    color: #245D76;
+}
+
 .slowcloud-cm-heading-menu .slowcloud-cm-command[data-tooltip]::after {
     top: calc(100% + 5px);
     bottom: auto;
