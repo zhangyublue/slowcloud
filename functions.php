@@ -2931,10 +2931,73 @@ function slowcloud_timeline_color_is_valid(string $color): bool
     return preg_match('/^(?:#[0-9a-f]{3,4}|#[0-9a-f]{6}(?:[0-9a-f]{2})?|(?:rgb|hsl)a?\(\s*[0-9.%]+(?:\s*[,\/]\s*[0-9.%]+){2,3}\s*\)|[a-z]+)$/i', $color) === 1;
 }
 
+function slowcloud_extract_timeline_item_icon(string $source): array
+{
+    $pattern = '/\[timeline-item-icon\][ \t]*(.*?)[ \t]*\[\/timeline-item-icon\][ \t]*/msi';
+    $hasMarker = preg_match('/\[\/?timeline-item-icon\b/i', $source) === 1;
+    preg_match_all($pattern, $source, $matches, PREG_SET_ORDER);
+    if (!$hasMarker) return [$source, null, true];
+    if (count($matches) !== 1 || trim($matches[0][1]) === '') return [$source, null, false];
+    $icon = trim($matches[0][1]);
+    if (preg_match('/^<svg\b[\s\S]*<\/svg\s*>$/i', $icon) !== 1
+        && preg_match('/^<svg\b[^>]*\/\s*>$/i', $icon) !== 1) return [$source, null, false];
+    $remaining = preg_replace($pattern, '', $source, 1, $removed);
+    return [$remaining, $removed === 1 ? $icon : null, $removed === 1];
+}
+
+function slowcloud_timeline_icon_allowed_attribute(string $name): bool
+{
+    return in_array(strtolower($name), ['viewbox', 'xmlns', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'fill-rule', 'clip-rule', 'd', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'x1', 'x2', 'y', 'y1', 'y2', 'points', 'transform', 'role', 'aria-hidden', 'focusable', 'version'], true);
+}
+
+function slowcloud_timeline_icon_safe_value(string $value): bool
+{
+    return strlen($value) <= 2000 && preg_match('/(?:url\s*\(|javascript:|data:|expression\s*\()/i', $value) !== 1;
+}
+
+function slowcloud_clone_timeline_icon(\DOMDocument $document, \DOMElement $source): ?\DOMElement
+{
+    $svg = null;
+    foreach ($source->childNodes as $child) {
+        if ($child instanceof \DOMElement) {
+            if ($svg !== null || strtolower($child->tagName) !== 'svg') return null;
+            $svg = $child;
+        } elseif ($child instanceof \DOMText && trim($child->nodeValue) !== '') return null;
+    }
+    if (!$svg) return null;
+    $allowed = ['svg', 'g', 'path', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'rect', 'title'];
+    $copy = static function (\DOMElement $node) use (&$copy, $document, $allowed): ?\DOMElement {
+        $tag = strtolower($node->tagName);
+        if (!in_array($tag, $allowed, true)) return null;
+        $result = $document->createElement($tag);
+        foreach ($node->attributes as $attribute) {
+            if (slowcloud_timeline_icon_allowed_attribute($attribute->name) && slowcloud_timeline_icon_safe_value($attribute->value)) {
+                $result->setAttribute($attribute->name, $attribute->value);
+            }
+        }
+        foreach ($node->childNodes as $child) {
+            if ($child instanceof \DOMElement) {
+                $childClone = $copy($child);
+                if ($childClone) $result->appendChild($childClone);
+            } elseif ($child instanceof \DOMText && $tag === 'title') {
+                $result->appendChild($document->createTextNode($child->nodeValue));
+            }
+        }
+        return $result;
+    };
+    $result = $copy($svg);
+    if (!$result) return null;
+    $result->setAttribute('class', 'slowcloud-timeline__icon-svg');
+    $result->setAttribute('aria-hidden', 'true');
+    $result->setAttribute('focusable', 'false');
+    $result->setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    return $result;
+}
+
 function slowcloud_compile_timeline_markdown(string $text): array
 {
     $text = (string) preg_replace_callback(
-        '/\[(?:\/?timeline(?:-item(?:-(?:left|right))?)?)[^\]]*\]/i',
+        '/\[(?:\/?timeline(?:-item(?:-(?:left|right|icon))?)?)[^\]]*\]/i',
         static function (array $matches): string {
             return html_entity_decode($matches[0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         },
@@ -2958,6 +3021,7 @@ function slowcloud_compile_timeline_markdown(string $text): array
         $items = [];
         foreach ($itemMatches as $itemMatch) {
             $itemAttributes = slowcloud_timeline_attributes($itemMatch[1]);
+            [$itemSource, $iconMarkup, $iconValid] = slowcloud_extract_timeline_item_icon($itemMatch[2]);
             $color = $itemAttributes['color'] ?? 'blue';
             $solid = $itemAttributes['solid'] ?? 'false';
             $gap = $itemAttributes['gap'] ?? '25';
@@ -2966,20 +3030,24 @@ function slowcloud_compile_timeline_markdown(string $text): array
                 || !slowcloud_timeline_color_is_valid($color)
                 || !in_array($solid, ['true', 'false'], true)
                 || !preg_match('/^\d+(?:\.\d+)?$/', $gap)
-                || !in_array($line, ['solid', 'dash'], true)) {
+                || !in_array($line, ['solid', 'dash'], true)
+                || !$iconValid) {
                 return $matches[0];
             }
             $itemTag = '<slowcloud-timeline-item color="' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8')
                 . '" solid="' . $solid . '" gap="' . $gap . '" line="' . $line . '">';
+            if ($iconMarkup !== null) {
+                $itemTag .= '<slowcloud-timeline-item-icon>' . $iconMarkup . '</slowcloud-timeline-item-icon>';
+            }
 
             if ($mode !== 'medium') {
-                $items[] = $itemTag . \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($itemMatch[2])) . '</slowcloud-timeline-item>';
+                $items[] = $itemTag . \Utils\Markdown::convert(slowcloud_prepare_custom_markdown($itemSource)) . '</slowcloud-timeline-item>';
                 continue;
             }
 
             $sidePattern = '/^[ \t]*\[timeline-item-(left|right)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline-item-\1\][ \t]*(?:\r?\n|$)/ms';
-            preg_match_all($sidePattern, $itemMatch[2], $sideMatches, PREG_SET_ORDER);
-            if (!$sideMatches || trim((string) preg_replace($sidePattern, '', $itemMatch[2])) !== '') {
+            preg_match_all($sidePattern, $itemSource, $sideMatches, PREG_SET_ORDER);
+            if (!$sideMatches || trim((string) preg_replace($sidePattern, '', $itemSource)) !== '') {
                 return $matches[0];
             }
 
@@ -3104,9 +3172,24 @@ function slowcloud_render_custom_tags(string $html): string
                 $entry->setAttribute('style', '--slowcloud-timeline-color:' . $color . ';--slowcloud-timeline-gap:' . $gap . 'px;--slowcloud-timeline-line-style:' . ($line === 'dash' ? 'dashed' : 'solid') . ';--slowcloud-timeline-incoming-line-style:' . ($previousLine === 'dash' ? 'dashed' : 'solid') . ';');
                 $rail = $document->createElement('div');
                 $rail->setAttribute('class', 'slowcloud-timeline__rail');
-                $dot = $document->createElement('span');
-                $dot->setAttribute('class', 'slowcloud-timeline__dot');
-                $rail->appendChild($dot);
+                $customIcon = null;
+                foreach ($item->childNodes as $itemChild) {
+                    if ($itemChild instanceof \DOMElement && strtolower($itemChild->tagName) === 'slowcloud-timeline-item-icon') {
+                        $customIcon = slowcloud_clone_timeline_icon($document, $itemChild);
+                        break;
+                    }
+                }
+                if ($customIcon) {
+                    $rail->appendChild($customIcon);
+                } else {
+                    $dot = $document->createElement('span');
+                    $dot->setAttribute('class', 'slowcloud-timeline__dot');
+                    $rail->appendChild($dot);
+                }
+                $connector = $document->createElement('span');
+                $connector->setAttribute('class', 'slowcloud-timeline__connector');
+                $connector->setAttribute('aria-hidden', 'true');
+                $rail->appendChild($connector);
                 $left = $document->createElement('div');
                 $left->setAttribute('class', 'slowcloud-timeline__content slowcloud-timeline__content--left');
                 $right = $document->createElement('div');
@@ -3115,6 +3198,9 @@ function slowcloud_render_custom_tags(string $html): string
                 if ($mode === 'medium') {
                     foreach (iterator_to_array($item->childNodes) as $child) {
                         if (!$child instanceof \DOMElement) {
+                            continue;
+                        }
+                        if (strtolower($child->tagName) === 'slowcloud-timeline-item-icon') {
                             continue;
                         }
                         $target = strtolower($child->tagName) === 'slowcloud-timeline-item-left' ? $left : $right;
@@ -3126,8 +3212,11 @@ function slowcloud_render_custom_tags(string $html): string
                     $entry->appendChild($rail);
                     $entry->appendChild($right);
                 } else {
-                    while ($item->firstChild) {
-                        $right->appendChild($item->firstChild);
+                    foreach (iterator_to_array($item->childNodes) as $child) {
+                        if ($child instanceof \DOMElement && strtolower($child->tagName) === 'slowcloud-timeline-item-icon') {
+                            continue;
+                        }
+                        $right->appendChild($child);
                     }
                     if ($mode === 'right') {
                         $entry->appendChild($right);

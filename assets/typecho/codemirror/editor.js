@@ -189,6 +189,71 @@ export function mountSlowcloudEditor(options) {
         return /^(?:#[0-9a-f]{3,4}|#[0-9a-f]{6}(?:[0-9a-f]{2})?|(?:rgb|hsl)a?\(\s*[0-9.%]+(?:\s*[,/]\s*[0-9.%]+){2,3}\s*\)|[a-z]+)$/i.test(color);
     }
 
+    function extractTimelineItemIcon(source) {
+        const pattern = /\[timeline-item-icon\][ \t]*(.*?)[ \t]*\[\/timeline-item-icon\][ \t]*/gmsi;
+        const hasMarker = /\[\/?timeline-item-icon\b/i.test(source);
+        const matches = [...source.matchAll(pattern)];
+        if (!hasMarker) return {source, icon: null, valid: true};
+        if (matches.length !== 1 || !matches[0][1].trim()) return {source, icon: null, valid: false};
+
+        const icon = matches[0][1].trim();
+        if (!/^<svg\b[\s\S]*<\/svg\s*>$/i.test(icon) && !/^<svg\b[^>]*\/\s*>$/i.test(icon)) {
+            return {source, icon: null, valid: false};
+        }
+
+        return {source: source.replace(pattern, ''), icon, valid: true};
+    }
+
+    function timelineIconAttributeIsAllowed(name) {
+        return new Set([
+            'viewbox', 'xmlns', 'width', 'height', 'fill', 'stroke', 'stroke-width',
+            'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray',
+            'stroke-dashoffset', 'fill-rule', 'clip-rule', 'd', 'cx', 'cy', 'r', 'rx',
+            'ry', 'x', 'x1', 'x2', 'y', 'y1', 'y2', 'points', 'transform', 'role',
+            'aria-hidden', 'focusable', 'version'
+        ]).has(name.toLowerCase());
+    }
+
+    function timelineIconValueIsSafe(value) {
+        return value.length <= 2000 && !/(?:url\s*\(|javascript:|data:|expression\s*\()/i.test(value);
+    }
+
+    function cloneTimelineIcon(source) {
+        const svg = [...source.children].find(child => child.tagName.toLowerCase() === 'svg');
+        if (!svg || source.children.length !== 1 || [...source.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.nodeValue.trim())) {
+            return null;
+        }
+
+        const allowedElements = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'rect', 'title']);
+        const copy = node => {
+            const tag = node.tagName.toLowerCase();
+            if (!allowedElements.has(tag)) return null;
+            const clone = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            [...node.attributes].forEach(attribute => {
+                if (timelineIconAttributeIsAllowed(attribute.name) && timelineIconValueIsSafe(attribute.value)) {
+                    clone.setAttribute(attribute.name, attribute.value);
+                }
+            });
+            [...node.childNodes].forEach(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    const childClone = copy(child);
+                    if (childClone) clone.appendChild(childClone);
+                } else if (child.nodeType === Node.TEXT_NODE && tag === 'title') {
+                    clone.appendChild(document.createTextNode(child.nodeValue));
+                }
+            });
+            return clone;
+        };
+
+        const icon = copy(svg);
+        if (!icon) return null;
+        icon.setAttribute('class', 'slowcloud-timeline__icon-svg');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.setAttribute('focusable', 'false');
+        icon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        return icon;
+    }
+
     function compileTimelines(source, convertMarkdown) {
         const timelines = [];
         const timelinePattern = /^[ \t]*\[timeline((?:\s+[a-z-]+="[^"]*")*)\][ \t]*(?:\r?\n)(.*?)^[ \t]*\[\/timeline\][ \t]*$/gms;
@@ -206,6 +271,7 @@ export function mountSlowcloudEditor(options) {
             const items = [];
             for (const match of matches) {
                 const item = timelineAttributes(match[1]);
+                const itemContent = extractTimelineItemIcon(match[2]);
                 const color = item && (item.color || 'blue');
                 const solid = item && (item.solid || 'false');
                 const gap = item && (item.gap || '25');
@@ -214,17 +280,19 @@ export function mountSlowcloudEditor(options) {
                     || !timelineColorIsValid(color)
                     || !['true', 'false'].includes(solid)
                     || !/^\d+(?:\.\d+)?$/.test(gap)
-                    || !['solid', 'dash'].includes(line)) return block;
+                    || !['solid', 'dash'].includes(line)
+                    || !itemContent.valid) return block;
                 const itemTag = '<slowcloud-timeline-item color="' + color
-                    + '" solid="' + solid + '" gap="' + gap + '" line="' + line + '">';
+                    + '" solid="' + solid + '" gap="' + gap + '" line="' + line + '">'
+                    + (itemContent.icon ? '<slowcloud-timeline-item-icon>' + itemContent.icon + '</slowcloud-timeline-item-icon>' : '');
 
                 if (mode !== 'medium') {
-                    items.push(itemTag + convertMarkdown(match[2]) + '</slowcloud-timeline-item>');
+                    items.push(itemTag + convertMarkdown(itemContent.source) + '</slowcloud-timeline-item>');
                     continue;
                 }
 
-                const sides = [...match[2].matchAll(sidePattern)];
-                if (!sides.length || match[2].replace(sidePattern, '').trim() !== '') return block;
+                const sides = [...itemContent.source.matchAll(sidePattern)];
+                if (!sides.length || itemContent.source.replace(sidePattern, '').trim() !== '') return block;
                 const content = {};
                 for (const side of sides) {
                     if (content[side[1]] !== undefined) return block;
@@ -296,6 +364,7 @@ export function mountSlowcloudEditor(options) {
                 const entry = document.createElement('article');
                 const rail = document.createElement('div');
                 const dot = document.createElement('span');
+                const connector = document.createElement('span');
                 const left = document.createElement('div');
                 const right = document.createElement('div');
                 entry.className = 'slowcloud-timeline__item' + (['blue', 'green', 'red', 'gray'].includes(color) ? ' slowcloud-timeline__item--' + color : '') + (solid ? ' slowcloud-timeline__item--solid' : '');
@@ -305,18 +374,27 @@ export function mountSlowcloudEditor(options) {
                 entry.style.setProperty('--slowcloud-timeline-incoming-line-style', previousLine === 'dash' ? 'dashed' : 'solid');
                 rail.className = 'slowcloud-timeline__rail';
                 dot.className = 'slowcloud-timeline__dot';
+                connector.className = 'slowcloud-timeline__connector';
+                connector.setAttribute('aria-hidden', 'true');
                 left.className = 'slowcloud-timeline__content slowcloud-timeline__content--left';
                 right.className = 'slowcloud-timeline__content slowcloud-timeline__content--right';
-                rail.appendChild(dot);
+                const iconSource = [...item.children].find(child => child.tagName === 'SLOWCLOUD-TIMELINE-ITEM-ICON');
+                const icon = iconSource ? cloneTimelineIcon(iconSource) : null;
+                rail.appendChild(icon || dot);
+                rail.appendChild(connector);
 
                 if (mode === 'medium') {
                     [...item.children].forEach(child => {
+                        if (child.tagName === 'SLOWCLOUD-TIMELINE-ITEM-ICON') return;
                         const target = child.tagName === 'SLOWCLOUD-TIMELINE-ITEM-LEFT' ? left : right;
                         while (child.firstChild) target.appendChild(child.firstChild);
                     });
                     entry.append(left, rail, right);
                 } else {
-                    while (item.firstChild) right.appendChild(item.firstChild);
+                    [...item.childNodes].forEach(child => {
+                        if (child.nodeType === Node.ELEMENT_NODE && child.tagName === 'SLOWCLOUD-TIMELINE-ITEM-ICON') return;
+                        right.appendChild(child);
+                    });
                     if (mode === 'right') entry.append(right, rail);
                     else entry.append(rail, right);
                 }
@@ -469,7 +547,7 @@ export function mountSlowcloudEditor(options) {
         renderCustomTags(rendered);
         html = rendered.innerHTML;
 
-        if (window.DOMPurify) html = window.DOMPurify.sanitize(html, {USE_PROFILES: {html: true}});
+        if (window.DOMPurify) html = window.DOMPurify.sanitize(html, {USE_PROFILES: {html: true, svg: true}});
         preview.innerHTML = html;
         requestAnimationFrame(() => requestAnimationFrame(() => alignTimelines(preview)));
         preview.dispatchEvent(new CustomEvent('slowcloud:preview-refresh', {bubbles: true}));
