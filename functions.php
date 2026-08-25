@@ -3763,9 +3763,11 @@ function slowcloud_default_header_menu_items($archive): array
         'children' => [],
     ]];
     $timeline = slowcloud_timeline_page();
-    if ($timeline !== null) {
-        $items[] = ['name' => _t('时光轴'), 'url' => $timeline['permalink'], 'children' => []];
-    }
+    $items[] = [
+        'name' => (string) ($timeline['title'] ?? _t('时光轴')),
+        'url' => (string) ($timeline['permalink'] ?? slowcloud_timeline_link($archive)),
+        'children' => [],
+    ];
 
     \Widget\Contents\Page\Rows::alloc()->to($pages);
     while ($pages->next()) {
@@ -3787,9 +3789,11 @@ function slowcloud_auto_header_menu_items($archive, array $sources, int $latestC
     }
     if (in_array('timeline', $sources, true)) {
         $timeline = slowcloud_timeline_page();
-        if ($timeline !== null) {
-            $groups['timeline'] = [['name' => (string) $timeline['title'], 'url' => (string) $timeline['permalink'], 'children' => []]];
-        }
+        $groups['timeline'] = [[
+            'name' => (string) ($timeline['title'] ?? _t('时光轴')),
+            'url' => (string) ($timeline['permalink'] ?? slowcloud_timeline_link($archive)),
+            'children' => [],
+        ]];
     }
     if (in_array('categories', $sources, true)) {
         $categoryRows = [];
@@ -3908,7 +3912,8 @@ function slowcloud_timeline_link($archive): string
         return $page['permalink'];
     }
 
-    return rtrim((string) (($archive->options ?? \Widget\Options::alloc())->siteUrl ?? ''), '/');
+    $siteUrl = rtrim((string) (($archive->options ?? \Widget\Options::alloc())->siteUrl ?? ''), '/');
+    return \Typecho\Common::url('timeline/', $siteUrl . '/');
 }
 
 function slowcloud_timeline_summary_text($post): string
