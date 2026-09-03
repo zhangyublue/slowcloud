@@ -30,6 +30,7 @@
     --slowcloud-button-text: #ffffff;
     --slowcloud-header-cover-image: none;
     --slowcloud-header-height: 120px;
+    --slowcloud-header-compact-height: 64px;
     --slowcloud-header-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0.12) 100%);
     --slowcloud-header-content-max: 720px;
     --slowcloud-header-text: #f8fbff;
@@ -376,6 +377,10 @@ img {
     align-items: center;
 }
 
+.slowcloud-header-compact-brand {
+    display: none;
+}
+
 .slowcloud-brand-title {
     display: block;
     font-size: 1.8rem;
@@ -424,6 +429,8 @@ img {
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
+    transform: translateY(var(--slowcloud-nav-shift, 0px));
+    transition: transform 0.12s linear;
 }
 
 .slowcloud-site-nav__item {
@@ -566,6 +573,75 @@ img {
 .slowcloud-site-nav__item--has-children:focus-within > a > .slowcloud-site-nav__arrow,
 .slowcloud-site-nav__item--has-children:focus-within > .slowcloud-site-nav__trigger > .slowcloud-site-nav__arrow {
     transform: rotate(225deg) translateY(-2px);
+}
+
+@media (min-width: 961px) {
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact {
+        min-height: var(--slowcloud-header-compact-height);
+    }
+
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-header-actions {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 40;
+        width: 100%;
+        height: var(--slowcloud-header-compact-height);
+        padding: 0 max(24px, calc((100vw - var(--slowcloud-container)) / 2));
+        background: var(--slowcloud-surface-strong);
+        box-shadow: 0 10px 30px rgba(22, 43, 72, 0.16);
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        min-width: 0;
+    }
+
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-header-compact-brand {
+        display: block;
+        position: static;
+        max-width: 35%;
+        overflow: hidden;
+        color: var(--slowcloud-text);
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.24s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav {
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        min-width: 0;
+        overflow-x: auto;
+        transform: translateY(0);
+        scrollbar-width: none;
+    }
+
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav a,
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav__trigger {
+        color: var(--slowcloud-text);
+        white-space: nowrap;
+    }
+
+    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-header-compact-brand {
+        display: block;
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(18px);
+        transition: opacity 0.24s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
 }
 
 .slowcloud-quick-tools {

@@ -55,6 +55,52 @@
     applyTheme(getPreferredTheme());
     root.classList.add('slowcloud-ready');
 
+    const compactHeader = document.querySelector('[data-slowcloud-compact-header]');
+    const compactHeaderMedia = window.matchMedia('(min-width: 961px)');
+
+    if (compactHeader && !body.classList.contains('slowcloud-body--classic')) {
+        const siteNav = compactHeader.querySelector('.slowcloud-site-nav');
+        let compactHeaderFrame = 0;
+        let expandedHeaderHeight = compactHeader.offsetHeight;
+
+        const updateCompactHeader = () => {
+            compactHeaderFrame = 0;
+            const canCompact = compactHeaderMedia.matches;
+            const compactHeight = parseFloat(getComputedStyle(compactHeader)
+                .getPropertyValue('--slowcloud-header-compact-height')) || 64;
+            const compactAt = Math.max(0, expandedHeaderHeight - compactHeight);
+            const isCompact = canCompact && window.scrollY >= compactAt;
+            if (siteNav) {
+                const navShift = isCompact ? 0 : Math.min(window.scrollY, compactAt);
+                siteNav.style.setProperty('--slowcloud-nav-shift', `${navShift}px`);
+            }
+            compactHeader.classList.toggle('is-compact', isCompact);
+            body.classList.toggle('slowcloud-body--header-compact', isCompact);
+        };
+
+        const requestCompactHeaderUpdate = () => {
+            if (!compactHeaderFrame) {
+                compactHeaderFrame = window.requestAnimationFrame(updateCompactHeader);
+            }
+        };
+
+        const refreshCompactHeader = () => {
+            if (!compactHeader.classList.contains('is-compact')) {
+                expandedHeaderHeight = compactHeader.offsetHeight;
+            }
+            requestCompactHeaderUpdate();
+        };
+
+        window.addEventListener('scroll', requestCompactHeaderUpdate, { passive: true });
+        window.addEventListener('resize', refreshCompactHeader);
+        if (typeof compactHeaderMedia.addEventListener === 'function') {
+            compactHeaderMedia.addEventListener('change', refreshCompactHeader);
+        } else if (typeof compactHeaderMedia.addListener === 'function') {
+            compactHeaderMedia.addListener(refreshCompactHeader);
+        }
+        updateCompactHeader();
+    }
+
     if (topLoader) {
         let hideTopLoaderTimer = 0;
         let loaderPositionFrame = 0;
