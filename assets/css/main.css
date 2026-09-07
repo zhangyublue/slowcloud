@@ -30,7 +30,7 @@
     --slowcloud-button-text: #ffffff;
     --slowcloud-header-cover-image: none;
     --slowcloud-header-height: 120px;
-    --slowcloud-header-compact-height: 64px;
+    --slowcloud-header-compact-height: 52px;
     --slowcloud-header-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0.12) 100%);
     --slowcloud-header-content-max: 720px;
     --slowcloud-header-text: #f8fbff;
@@ -589,9 +589,15 @@ img {
         width: 100%;
         height: var(--slowcloud-header-compact-height);
         padding: 0 max(24px, calc((100vw - var(--slowcloud-container)) / 2));
-        background: var(--slowcloud-surface-strong);
-        box-shadow: 0 10px 30px rgba(22, 43, 72, 0.16);
-        align-items: flex-start;
+        color: var(--slowcloud-header-text);
+        background:
+            var(--slowcloud-header-overlay),
+            var(--slowcloud-header-cover-image),
+            linear-gradient(135deg, rgba(214, 232, 255, 0.9) 0%, rgba(245, 249, 255, 0.98) 100%);
+        background-position: center;
+        background-size: cover;
+        box-shadow: 0 10px 30px rgba(22, 43, 72, 0.28);
+        align-items: center;
         justify-content: space-between;
         flex-wrap: nowrap;
         min-width: 0;
@@ -602,14 +608,16 @@ img {
         position: static;
         max-width: 35%;
         overflow: hidden;
-        color: var(--slowcloud-text);
-        font-size: 1.15rem;
+        color: var(--slowcloud-header-text);
+        font-size: 1.35rem;
         font-weight: 700;
         line-height: 1.2;
         text-decoration: none;
         text-overflow: ellipsis;
         white-space: nowrap;
         opacity: 1;
+        pointer-events: auto;
+        cursor: pointer;
         transform: translateY(0);
         transition: opacity 0.24s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
     }
@@ -618,18 +626,13 @@ img {
         justify-content: flex-end;
         flex-wrap: nowrap;
         min-width: 0;
-        overflow-x: auto;
+        overflow: visible;
         transform: translateY(0);
-        scrollbar-width: none;
-    }
-
-    .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav::-webkit-scrollbar {
-        display: none;
     }
 
     .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav a,
     .slowcloud-body:not(.slowcloud-body--classic) .slowcloud-site-header.is-compact .slowcloud-site-nav__trigger {
-        color: var(--slowcloud-text);
+        color: var(--slowcloud-header-chip-text);
         white-space: nowrap;
     }
 
