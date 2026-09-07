@@ -24,7 +24,7 @@
             <?php endif; ?>
 
             <div class="slowcloud-entry-content" itemprop="articleBody">
-                <?php slowcloud_render_content($this); ?>
+                <?php slowcloud_render_article_content($this); ?>
             </div>
 
             <footer class="slowcloud-article-footer">

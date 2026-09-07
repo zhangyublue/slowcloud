@@ -65,7 +65,7 @@
     </button>
 </div>
 <div class="slowcloud-site-wrap" style="--slowcloud-container: <?php echo htmlspecialchars($slowcloudSiteWidth, ENT_QUOTES, $this->options->charset); ?>; --slowcloud-header-height: <?php echo htmlspecialchars($slowcloudHeaderHeight, ENT_QUOTES, $this->options->charset); ?>;">
-    <header class="slowcloud-site-header<?php if ($slowcloudHeaderBackground !== ''): ?> slowcloud-site-header--has-cover<?php endif; ?>"<?php if ($slowcloudHeaderBackground !== ''): ?> data-slowcloud-cover="<?php echo htmlspecialchars($slowcloudHeaderBackground, ENT_QUOTES, $this->options->charset); ?>"<?php endif; ?> style="--slowcloud-header-height: <?php echo htmlspecialchars($slowcloudHeaderHeight, ENT_QUOTES, $this->options->charset); ?>;<?php if ($slowcloudHeaderBackground !== ''): ?> --slowcloud-header-cover-image: url('<?php echo htmlspecialchars($slowcloudHeaderBackground, ENT_QUOTES, $this->options->charset); ?>');<?php endif; ?>">
+    <header class="slowcloud-site-header<?php if ($slowcloudHeaderBackground !== ''): ?> slowcloud-site-header--has-cover<?php endif; ?>" data-slowcloud-compact-header<?php if ($slowcloudHeaderBackground !== ''): ?> data-slowcloud-cover="<?php echo htmlspecialchars($slowcloudHeaderBackground, ENT_QUOTES, $this->options->charset); ?>"<?php endif; ?> style="--slowcloud-header-height: <?php echo htmlspecialchars($slowcloudHeaderHeight, ENT_QUOTES, $this->options->charset); ?>;<?php if ($slowcloudHeaderBackground !== ''): ?> --slowcloud-header-cover-image: url('<?php echo htmlspecialchars($slowcloudHeaderBackground, ENT_QUOTES, $this->options->charset); ?>');<?php endif; ?>">
         <div class="slowcloud-header-overlay"></div>
         <div class="slowcloud-header-inner">
             <div class="slowcloud-header-topbar">
@@ -75,6 +75,9 @@
                 </div>
 
                 <div class="slowcloud-header-actions">
+                    <a class="slowcloud-header-compact-brand" href="<?php $this->options->siteUrl(); ?>" aria-label="<?php $this->options->title(); ?>">
+                        <?php $this->options->title(); ?>
+                    </a>
                     <nav class="slowcloud-site-nav" aria-label="<?php _e('主导航'); ?>">
                         <?php foreach ($slowcloudHeaderMenuItems as $item): ?>
                             <?php $hasChildren = !empty($item['children']); ?>

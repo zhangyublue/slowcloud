@@ -57,7 +57,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
                 <?php endforeach; ?>
             </nav>
 
-            <div class="slowcloud-timeline">
+            <div class="slowcloud-archive-timeline">
                 <?php foreach ($timelineYears as $timelineYear): ?>
                     <section id="timeline-year-<?php echo htmlspecialchars($timelineYear['year'], ENT_QUOTES, $this->options->charset); ?>" class="slowcloud-timeline-year">
                         <header class="slowcloud-timeline-year-header">

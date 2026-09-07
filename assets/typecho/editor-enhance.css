@@ -147,6 +147,11 @@
     padding-left: 1.6em;
 }
 
+#wmd-preview.slowcloud-editor-preview ul.slowcloud-task-list,
+#wmd-preview.slowcloud-editor-preview ol.slowcloud-task-list {
+    padding-left: .3em;
+}
+
 #wmd-preview.slowcloud-editor-preview blockquote {
     margin-right: 0;
     margin-left: 0;
@@ -364,4 +369,319 @@ html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .
 
 html[data-slowcloud-editor-theme="dark"] #wmd-preview.slowcloud-editor-preview .slowcloud-code-window pre[class*="language-"].line-numbers .line-numbers-rows > span::before {
     color: #858a92;
+}
+#wmd-button-bar,
+.wmd-edittab {
+    display: none !important;
+}
+
+.slowcloud-cm-editor {
+    position: relative;
+    margin: 1em 0;
+    border: 1px solid #D9D9D6;
+    background: #FFF;
+}
+
+.slowcloud-cm-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 1px solid #F0F0EC;
+    background: #FAFAF8;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    color: #65707C;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command[data-tooltip]::after {
+    position: absolute;
+    z-index: 1004;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    display: block;
+    width: max-content;
+    max-width: 160px;
+    padding: 4px 6px;
+    border-radius: 2px;
+    background: #303741;
+    color: #FFF;
+    content: attr(data-tooltip);
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.25;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%);
+    visibility: hidden;
+    white-space: nowrap;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command[data-tooltip]:hover::after,
+.slowcloud-cm-toolbar .slowcloud-cm-command[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.slowcloud-cm-icon {
+    display: block;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.slowcloud-cm-toolbar .slowcloud-cm-command:hover,
+.slowcloud-cm-toolbar .slowcloud-cm-command:focus {
+    color: #467B96;
+}
+
+.slowcloud-cm-heading-control {
+    position: relative;
+}
+
+.slowcloud-cm-heading-menu {
+    position: absolute;
+    z-index: 1003;
+    top: 29px;
+    left: 0;
+    display: none;
+    grid-template-columns: repeat(6, 30px);
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid #D9D9D6;
+    border-radius: 2px;
+    background: #FFF;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+}
+
+.slowcloud-cm-heading-menu .slowcloud-cm-icon {
+    flex-basis: 22px;
+    width: 22px;
+    height: 22px;
+}
+
+.slowcloud-cm-timeline-dialog {
+    width: min(360px, calc(100vw - 32px));
+    padding: 18px;
+    border: 1px solid #D9D9D6;
+    border-radius: 4px;
+    background: #FFF;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+    color: #243449;
+}
+.slowcloud-cm-timeline-dialog::backdrop { background: rgba(25, 35, 48, .28); }
+.slowcloud-cm-timeline-dialog form { display: grid; gap: 10px; margin: 0; }
+.slowcloud-cm-timeline-dialog strong { margin-bottom: 4px; }
+.slowcloud-cm-timeline-dialog button {
+    min-height: 38px;
+    border: 1px solid #D9D9D6;
+    border-radius: 3px;
+    background: #FAFAF8;
+    color: #334155;
+    cursor: pointer;
+}
+.slowcloud-cm-timeline-dialog button:hover,
+.slowcloud-cm-timeline-dialog button:focus-visible {
+    border-color: #467B96;
+    background: #F0F7FA;
+    color: #245D76;
+}
+
+.slowcloud-cm-heading-menu .slowcloud-cm-command[data-tooltip]::after {
+    top: calc(100% + 5px);
+    bottom: auto;
+}
+
+.slowcloud-cm-heading-control:hover .slowcloud-cm-heading-menu,
+.slowcloud-cm-heading-control:focus-within .slowcloud-cm-heading-menu {
+    display: grid;
+}
+
+.slowcloud-cm-count {
+    margin-left: auto;
+    padding: 0 6px;
+    color: #999;
+    font-size: 12px;
+    line-height: 25px;
+    white-space: nowrap;
+}
+
+.slowcloud-cm-workspace {
+    display: block;
+    height: 420px;
+}
+
+.slowcloud-cm-edit {
+    height: 420px;
+}
+
+.slowcloud-cm-edit .cm-editor {
+    height: 420px;
+    font-size: 14px;
+}
+
+.slowcloud-cm-edit .cm-scroller {
+    height: 420px;
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+.slowcloud-cm-edit .cm-editor,
+.slowcloud-cm-edit .cm-gutters {
+    color: #444;
+    background: #FFF;
+}
+
+.slowcloud-cm-edit .cm-scroller {
+    background: #FFF;
+}
+
+.slowcloud-cm-edit .cm-content {
+    background: transparent;
+}
+
+.slowcloud-cm-edit .cm-selectionBackground {
+    background: rgba(70, 123, 150, .28) !important;
+}
+
+.slowcloud-cm-edit .cm-content::selection,
+.slowcloud-cm-edit .cm-content ::selection {
+    background: rgba(70, 123, 150, .28);
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-heading {
+    color: #117FC8;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-heading-content {
+    color: #117FC8;
+    font-weight: 700;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-link-label {
+    color: #507FB7;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-link-url {
+    text-decoration: underline;
+    text-decoration-color: #507FB7;
+    text-underline-offset: 2px;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-code {
+    color: #6840A5;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-list {
+    color: #3F55B5;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-strong-content {
+    color: #D32D76;
+    font-weight: 700;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-emphasis-content {
+    color: #D32D76;
+    font-style: italic;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-strike-content {
+    text-decoration: line-through;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-inline-code-content {
+    color: #41AA9D;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-quote,
+.slowcloud-cm-edit .slowcloud-cm-mark-task-open {
+    color: #52677D;
+}
+
+.slowcloud-cm-edit .slowcloud-cm-mark-task-done {
+    color: #008F4C;
+}
+
+.slowcloud-cm-edit .cm-activeLine {
+    background-color: rgba(70, 123, 150, .04) !important;
+}
+
+.slowcloud-cm-edit .cm-gutters {
+    border-right: 1px solid #F0F0EC;
+    color: #999;
+}
+
+.slowcloud-cm-preview {
+    display: none;
+    overflow: auto;
+    min-height: 420px;
+}
+
+.slowcloud-cm-divider {
+    display: none;
+}
+
+.slowcloud-cm-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    margin: 0;
+    background: #FFF;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-workspace {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) 6px minmax(240px, 1fr);
+    height: calc(100vh - 48px);
+    min-width: 0;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-edit,
+.slowcloud-cm-fullscreen .slowcloud-cm-preview {
+    display: block;
+    min-height: 0;
+    min-width: 0;
+    height: 100%;
+}
+
+.slowcloud-cm-fullscreen #wmd-preview.slowcloud-editor-preview {
+    margin: 0;
+    padding: 0 18px;
+}
+
+.slowcloud-cm-fullscreen #wmd-preview.slowcloud-editor-preview > :first-child {
+    margin-top: 0;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-edit .cm-editor,
+.slowcloud-cm-fullscreen .slowcloud-cm-edit .cm-scroller {
+    height: 100%;
+}
+
+.slowcloud-cm-fullscreen .slowcloud-cm-divider {
+    display: block;
+    cursor: col-resize;
+    background: #E4E4DF;
+}
+
+html[data-slowcloud-editor-theme="dark"] .slowcloud-cm-preview {
+    background: #20252B;
+}
+
+html[data-slowcloud-editor-theme="dark"] .slowcloud-cm-heading-menu {
+    border-color: #424A55;
+    background: #292F36;
 }

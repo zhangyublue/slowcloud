@@ -6,6 +6,39 @@
     word-wrap: break-word;
 }
 
+.slowcloud-task-list__item {
+    list-style: none;
+}
+
+.slowcloud-entry-content .slowcloud-task-list,
+.slowcloud-editor-preview .slowcloud-task-list {
+    margin: 0;
+    padding-left: .3em;
+}
+
+.slowcloud-entry-content .slowcloud-task-list > .slowcloud-task-list__item + .slowcloud-task-list__item,
+.slowcloud-editor-preview .slowcloud-task-list > .slowcloud-task-list__item + .slowcloud-task-list__item {
+    margin-top: 0;
+}
+
+.slowcloud-task-list__icon {
+    display: inline-block;
+    width: 1.25em;
+    color: #8f9ba8;
+    font-size: 1.12em;
+    line-height: 1;
+    vertical-align: -.04em;
+}
+
+.slowcloud-task-list__item--checked > .slowcloud-task-list__icon {
+    color: #20a464;
+}
+
+.slowcloud-entry-content li::marker,
+.slowcloud-editor-preview li::marker {
+    color: #1750E9;
+}
+
 .slowcloud-entry-content > :first-child,
 .slowcloud-editor-preview > :first-child {
     margin-top: 0;
@@ -160,6 +193,13 @@
     padding-left: 1.6em;
 }
 
+.slowcloud-entry-content ul.slowcloud-task-list,
+.slowcloud-editor-preview ul.slowcloud-task-list,
+.slowcloud-entry-content ol.slowcloud-task-list,
+.slowcloud-editor-preview ol.slowcloud-task-list {
+    padding-left: .3em;
+}
+
 .slowcloud-entry-content li + li,
 .slowcloud-editor-preview li + li {
     margin-top: .35em;
@@ -224,6 +264,181 @@
     color: var(--slowcloud-accent-deep, #507fb7);
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: .92em;
+}
+
+.slowcloud-timeline {
+    --slowcloud-timeline-line: rgba(94, 122, 161, .25);
+    width: min(720px, 100%);
+    margin: 1.5em 0;
+}
+
+.slowcloud-timeline__item {
+    --slowcloud-timeline-color: #1677ff;
+    --slowcloud-timeline-dot-offset: .91em;
+    --slowcloud-timeline-gap: 25px;
+    --slowcloud-timeline-line-style: solid;
+    --slowcloud-timeline-incoming-line-style: solid;
+    position: relative;
+    display: grid;
+    column-gap: 18px;
+    min-height: 40px;
+}
+
+.slowcloud-timeline__item:not(:last-child) {
+    padding-bottom: var(--slowcloud-timeline-gap);
+}
+
+.slowcloud-timeline__item:not(:last-child) .slowcloud-timeline__rail::after {
+    display: none;
+}
+
+.slowcloud-timeline__connector {
+    position: absolute;
+    z-index: 0;
+    top: var(--slowcloud-timeline-dot-offset);
+    left: 6px;
+    width: 0;
+    height: calc(100% - var(--slowcloud-timeline-dot-offset) + var(--slowcloud-timeline-gap));
+    border-left: 2px var(--slowcloud-timeline-line-style) var(--slowcloud-timeline-line);
+}
+
+.slowcloud-timeline__item:last-child .slowcloud-timeline__connector {
+    display: none;
+}
+
+.slowcloud-timeline__item--green { --slowcloud-timeline-color: #20a162; }
+.slowcloud-timeline__item--red { --slowcloud-timeline-color: #d43838; }
+.slowcloud-timeline__item--gray { --slowcloud-timeline-color: #8b95a1; }
+
+.slowcloud-timeline__rail {
+    position: relative;
+    width: 14px;
+    min-height: 100%;
+    align-self: stretch;
+}
+
+.slowcloud-timeline__rail::before {
+    position: absolute;
+    top: 0;
+    left: 6px;
+    width: 0;
+    height: var(--slowcloud-timeline-dot-offset);
+    border-left: 2px var(--slowcloud-timeline-incoming-line-style) var(--slowcloud-timeline-line);
+    content: "";
+}
+
+.slowcloud-timeline__item:first-child .slowcloud-timeline__rail::before {
+    display: none;
+}
+
+.slowcloud-timeline__item:only-child .slowcloud-timeline__rail::before {
+    display: none;
+}
+
+.slowcloud-timeline__dot {
+    position: absolute;
+    z-index: 1;
+    top: var(--slowcloud-timeline-dot-offset);
+    left: 2px;
+    width: 10px;
+    height: 10px;
+    box-sizing: border-box;
+    border: 2px solid var(--slowcloud-timeline-color);
+    border-radius: 50%;
+    background: #fff;
+    transform: translateY(-50%);
+}
+
+.slowcloud-timeline__icon-svg {
+    position: absolute;
+    z-index: 1;
+    top: var(--slowcloud-timeline-dot-offset);
+    left: -2px;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+    color: var(--slowcloud-timeline-color);
+    transform: translateY(-50%);
+}
+
+.slowcloud-timeline__item--solid .slowcloud-timeline__dot {
+    background: var(--slowcloud-timeline-color);
+}
+
+.slowcloud-timeline__content {
+    min-width: 0;
+    overflow-wrap: normal;
+}
+
+.slowcloud-timeline__content--constrained {
+    overflow-wrap: anywhere;
+}
+
+.slowcloud-entry-content .slowcloud-timeline__content > :first-child,
+.slowcloud-editor-preview .slowcloud-timeline__content > :first-child {
+    margin-top: 0 !important;
+}
+
+.slowcloud-entry-content .slowcloud-timeline__content > :last-child,
+.slowcloud-editor-preview .slowcloud-timeline__content > :last-child {
+    margin-bottom: 0 !important;
+}
+
+.slowcloud-timeline--left .slowcloud-timeline__item {
+    grid-template-columns: 14px minmax(0, 1fr);
+}
+
+.slowcloud-timeline--right .slowcloud-timeline__item {
+    grid-template-columns: minmax(0, 1fr) 14px;
+}
+
+.slowcloud-timeline--right .slowcloud-timeline__rail { grid-column: 2; }
+
+.slowcloud-timeline--right .slowcloud-timeline__content {
+    text-align: right;
+}
+
+.slowcloud-timeline--medium .slowcloud-timeline__item {
+    grid-template-columns: minmax(60px, 1fr) 14px minmax(60px, 1fr);
+}
+
+.slowcloud-timeline--medium .slowcloud-timeline__content--left {
+    grid-column: 1;
+    align-self: start;
+    text-align: right;
+}
+
+.slowcloud-timeline--medium .slowcloud-timeline__rail { grid-column: 2; }
+.slowcloud-timeline--medium .slowcloud-timeline__content--right {
+    grid-column: 3;
+    align-self: start;
+}
+
+@media (max-width: 640px) {
+    .slowcloud-timeline {
+        width: 100%;
+    }
+
+    .slowcloud-timeline--right .slowcloud-timeline__item,
+    .slowcloud-timeline--medium .slowcloud-timeline__item {
+        grid-template-columns: 14px minmax(0, 1fr);
+    }
+
+    .slowcloud-timeline--right .slowcloud-timeline__rail,
+    .slowcloud-timeline--medium .slowcloud-timeline__rail {
+        grid-column: 1;
+    }
+
+    .slowcloud-timeline--medium .slowcloud-timeline__content--left,
+    .slowcloud-timeline--medium .slowcloud-timeline__content--right,
+    .slowcloud-timeline--right .slowcloud-timeline__content {
+        grid-column: 2;
+        text-align: left;
+    }
+
+    .slowcloud-timeline--medium .slowcloud-timeline__content--right {
+        margin-top: 1em;
+    }
 }
 
 .slowcloud-entry-content .summary::after,
