@@ -1,7 +1,7 @@
 <?php if (!defined('__TYPECHO_ROOT_DIR__')) exit; ?>
 <?php $authorAvatar = slowcloud_author_avatar($this); ?>
 <?php if ($authorAvatar !== ''): ?>
-    <img class="slowcloud-home-author-avatar" src="<?php echo htmlspecialchars($authorAvatar, ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars(slowcloud_author_name($this), ENT_QUOTES, $this->options->charset); ?>">
+    <img class="slowcloud-home-author-avatar" src="<?php echo htmlspecialchars($authorAvatar, ENT_QUOTES, $this->options->charset); ?>" alt="<?php echo htmlspecialchars(slowcloud_author_avatar_alt($this), ENT_QUOTES, $this->options->charset); ?>" fetchpriority="high" decoding="async"<?php echo slowcloud_image_dimension_attrs($this, $authorAvatar, $this->options->charset); ?>>
 <?php endif; ?>
 <div class="slowcloud-home-author-copy">
     <h2 class="slowcloud-home-author-name"><?php echo htmlspecialchars(slowcloud_author_name($this), ENT_QUOTES, $this->options->charset); ?></h2>

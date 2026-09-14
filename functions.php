@@ -2067,7 +2067,9 @@ function slowcloud_seo_context($archive): array
     }
 
     $image = slowcloud_seo_image($archive);
-    $imageAlt = $isSingle ? slowcloud_poster_alt($archive) : '';
+    $imageAlt = $isSingle
+        ? slowcloud_poster_alt($archive)
+        : ($isIndex ? slowcloud_author_avatar_alt($archive) : '');
     $imageObject = $image !== '' ? slowcloud_seo_image_object($archive, $image, $imageAlt) : [];
 
     return [
@@ -2142,6 +2144,8 @@ function slowcloud_render_json_ld($archive, array $context): void
     $graph = [];
 
     if ($siteUrl !== '') {
+        $avatarUrl = slowcloud_seo_https_url(slowcloud_seo_absolute_url($archive, slowcloud_author_avatar($archive)));
+        $avatarAlt = slowcloud_author_avatar_alt($archive);
         $website = [
             '@type' => 'WebSite',
             '@id' => $siteId,
@@ -2151,6 +2155,15 @@ function slowcloud_render_json_ld($archive, array $context): void
 
         if ($siteDescription !== '') {
             $website['description'] = $siteDescription;
+        }
+
+        if ($avatarUrl !== '') {
+            $website['image'] = slowcloud_seo_image_object($archive, $avatarUrl, $avatarAlt);
+            $website['publisher'] = [
+                '@type' => 'Person',
+                'name' => slowcloud_author_name($archive),
+                'image' => slowcloud_seo_image_object($archive, $avatarUrl, $avatarAlt),
+            ];
         }
 
         $website['potentialAction'] = [
@@ -2266,6 +2279,10 @@ function slowcloud_render_seo_meta($archive, ?array $context = null): void
 
     if ($canonical !== '' && strpos((string) $context['robots'], 'noindex') !== 0) {
         echo '<link rel="canonical" href="' . slowcloud_seo_escape($canonical, $charset) . '">' . "\n";
+    }
+
+    if (!empty($context['is_index']) && $context['image'] !== '') {
+        echo '<link rel="image_src" href="' . slowcloud_seo_escape((string) $context['image'], $charset) . '">' . "\n";
     }
 
     echo '<meta property="og:type" content="' . slowcloud_seo_escape((string) $context['type'], $charset) . '">' . "\n";
@@ -3373,6 +3390,14 @@ function slowcloud_author_avatar($archive): string
     }
 
     return slowcloud_theme_asset_url('usr/themes/slowcloud/assets/img/avatar.jpg', $archive);
+}
+
+function slowcloud_author_avatar_alt($archive): string
+{
+    $options = $archive->options ?? \Widget\Options::alloc();
+    $siteName = trim((string) ($options->title ?? ''));
+
+    return ($siteName !== '' ? $siteName : slowcloud_author_name($archive)) . _t('网站头像');
 }
 
 function slowcloud_comment_default_avatar($archive): string
